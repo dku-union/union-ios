@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		BF2836232F6ED4360037E5BB /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = BF2836222F6ED4360037E5BB /* ComposableArchitecture */; };
+		BF9CA8C12F7962DA007C3992 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = BF9CA8C02F7962DA007C3992 /* ZIPFoundation */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		BF7E03B82F5C07870058D6D7 /* Union.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Union.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF2836232F6ED4360037E5BB /* ComposableArchitecture in Frameworks */,
+				BF9CA8C12F7962DA007C3992 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +85,8 @@
 			);
 			name = Union;
 			packageProductDependencies = (
+				BF2836222F6ED4360037E5BB /* ComposableArchitecture */,
+				BF9CA8C02F7962DA007C3992 /* ZIPFoundation */,
 			);
 			productName = Union;
 			productReference = BF7E03B82F5C07870058D6D7 /* Union.app */;
@@ -107,6 +116,10 @@
 			);
 			mainGroup = BF7E03AF2F5C07860058D6D7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BF2836212F6ED4360037E5BB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+				BF9CA8BF2F7962D9007C3992 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BF7E03B92F5C07870058D6D7 /* Products */;
 			projectDirPath = "";
@@ -163,11 +176,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.union.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -197,11 +208,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.union.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -349,6 +358,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BF2836212F6ED4360037E5BB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.25.2;
+			};
+		};
+		BF9CA8BF2F7962D9007C3992 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.20;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BF2836222F6ED4360037E5BB /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF2836212F6ED4360037E5BB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
+		};
+		BF9CA8C02F7962DA007C3992 /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF9CA8BF2F7962D9007C3992 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BF7E03B02F5C07860058D6D7 /* Project object */;
 }

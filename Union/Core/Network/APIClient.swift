@@ -8,7 +8,7 @@ actor APIClient {
     private let decoder: JSONDecoder
 
     init(
-        baseURL: URL = URL(string: "https://api.union.app/api/v1")!,
+        baseURL: URL = APIConfig.apiV1URL,
         session: URLSession = .shared
     ) {
         self.baseURL = baseURL
