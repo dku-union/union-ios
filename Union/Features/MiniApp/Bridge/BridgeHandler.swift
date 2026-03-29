@@ -73,6 +73,7 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
 
     private weak var webView: WKWebView?
     private let miniApp: MiniApp
+    weak var navigationController: MiniAppNavigationController?
 
     // 모듈 핸들러
     private lazy var authModule = AuthBridgeModule()
@@ -163,6 +164,39 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
         case "storage":   return try await storageModule.handle(action: action, params: params)
         case "analytics": return try await analyticsModule.handle(action: action, params: params)
         case "network":   return try await networkModule.handle(action: action, params: params)
+        case "navigation":
+            switch action {
+            case "push":
+                let url = params["url"] as? String ?? "/"
+                let title = params["title"] as? String
+                let animated = (params["animated"] as? Bool) ?? true
+                navigationController?.handlePush(url: url, title: title, animated: animated)
+            case "back":
+                navigationController?.handleBack()
+            case "replace":
+                let url = params["url"] as? String ?? "/"
+                navigationController?.handleReplace(url: url)
+            case "prefetch":
+                let url = params["url"] as? String ?? "/"
+                navigationController?.handlePrefetch(url: url)
+            case "willNavigate":
+                // SPA pushState 직전 — 스냅샷 캡처 트리거
+                NotificationCenter.default.post(name: .miniAppWillNavigate, object: nil)
+            case "stateChange":
+                // SPA depth 변경 알림
+                let depth = (params["depth"] as? Int) ?? 0
+                NotificationCenter.default.post(
+                    name: .miniAppSpaStateChange, object: nil,
+                    userInfo: ["depth": depth, "canGoBack": depth > 0]
+                )
+            default: break
+            }
+            return nil
+        case "debug":
+            let level = params["level"] as? String ?? "log"
+            let message = params["message"] as? String ?? ""
+            print("[WebView \(level)] \(message)")
+            return nil
         default:
             throw BridgeModuleError(code: "UNKNOWN_MODULE", message: "Unknown module: \(module)")
         }

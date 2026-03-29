@@ -81,6 +81,16 @@ struct HomeView: View {
                     .foregroundStyle(UNColor.textTertiary)
             }
             Spacer()
+            Button {
+                clearMiniAppCache()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.caption)
+                    .foregroundStyle(UNColor.textTertiary)
+                    .frame(width: 40, height: 40)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
             Button {} label: {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell")
@@ -99,6 +109,13 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, UNSpacing.xl)
+    }
+
+    private func clearMiniAppCache() {
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let miniappsDir = cacheDir.appendingPathComponent("miniapps")
+        try? FileManager.default.removeItem(at: miniappsDir)
+        print("[Cache] Cleared miniapps cache")
     }
 
     // MARK: - Categories (glass chips)
