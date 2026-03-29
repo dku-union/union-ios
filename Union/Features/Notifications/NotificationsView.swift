@@ -6,20 +6,20 @@ struct NotificationsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: UBSpacing.md) {
+                VStack(spacing: UNSpacing.md) {
                     ForEach(notifications) { notification in
                         NotificationRow(notification: notification)
                     }
                 }
-                .padding(UBSpacing.xl)
+                .padding(UNSpacing.xl)
             }
-            .background(UBColor.bgPrimary)
+            .background(UNColor.bgPrimary)
             .navigationTitle("알림")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("설정") {}
                         .font(.subheadline)
-                        .foregroundStyle(UBColor.textSecondary)
+                        .foregroundStyle(UNColor.textSecondary)
                 }
             }
         }
@@ -41,22 +41,22 @@ private struct NotificationRow: View {
 
     private var iconColor: Color {
         switch notification.type {
-        case .update: return UBColor.brand
-        case .recommendation: return UBColor.amber
-        case .announcement: return UBColor.coral
+        case .update: return UNColor.brand
+        case .recommendation: return UNColor.amber
+        case .announcement: return UNColor.coral
         }
     }
 
     private var iconBgColor: Color {
         switch notification.type {
-        case .update: return UBColor.brandLight
-        case .recommendation: return UBColor.amberLight
-        case .announcement: return UBColor.coralLight
+        case .update: return UNColor.brandLight
+        case .recommendation: return UNColor.amberLight
+        case .announcement: return UNColor.coralLight
         }
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: UBSpacing.lg) {
+        HStack(alignment: .top, spacing: UNSpacing.lg) {
             ZStack {
                 Circle()
                     .fill(iconBgColor)
@@ -67,24 +67,24 @@ private struct NotificationRow: View {
                     .foregroundStyle(iconColor)
             }
 
-            VStack(alignment: .leading, spacing: UBSpacing.xs) {
+            VStack(alignment: .leading, spacing: UNSpacing.xs) {
                 Text(notification.title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(
                         notification.isRead
-                            ? UBColor.textSecondary
-                            : UBColor.textPrimary
+                            ? UNColor.textSecondary
+                            : UNColor.textPrimary
                     )
 
                 Text(notification.body)
                     .font(.caption)
-                    .foregroundStyle(UBColor.textTertiary)
+                    .foregroundStyle(UNColor.textTertiary)
                     .lineLimit(2)
 
                 Text(notification.createdAt.timeAgoDisplay())
                     .font(.caption2)
-                    .foregroundStyle(UBColor.textTertiary)
+                    .foregroundStyle(UNColor.textTertiary)
                     .padding(.top, 2)
             }
 
@@ -92,14 +92,14 @@ private struct NotificationRow: View {
 
             if !notification.isRead {
                 Circle()
-                    .fill(UBColor.coral)
+                    .fill(UNColor.coral)
                     .frame(width: 8, height: 8)
             }
         }
-        .padding(UBSpacing.lg)
-        .background(notification.isRead ? UBColor.surface : UBColor.brandLight.opacity(0.3))
-        .clipShape(RoundedRectangle(cornerRadius: UBRadius.md, style: .continuous))
-        .ubShadow(.subtle)
+        .padding(UNSpacing.lg)
+        .background(notification.isRead ? UNColor.surface : UNColor.brandLight.opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: UNRadius.md, style: .continuous))
+        .unShadow(.subtle)
     }
 }
 

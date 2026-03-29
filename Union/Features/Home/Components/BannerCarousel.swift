@@ -1,11 +1,13 @@
 import SwiftUI
 
+// MARK: - Banner Carousel (Glassmorphism)
+
 struct BannerCarousel: View {
     let banners: [Banner]
     @State private var currentPage = 0
 
     var body: some View {
-        VStack(spacing: UBSpacing.md) {
+        VStack(spacing: UNSpacing.md) {
             TabView(selection: $currentPage) {
                 ForEach(Array(banners.enumerated()), id: \.element.id) { index, banner in
                     BannerCard(banner: banner)
@@ -13,17 +15,21 @@ struct BannerCarousel: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 160)
+            .frame(height: 170)
 
-            // Custom page indicator
+            // Glass page indicator
             HStack(spacing: 6) {
                 ForEach(0..<banners.count, id: \.self) { index in
                     Capsule()
-                        .fill(index == currentPage ? UBColor.brand : UBColor.border)
-                        .frame(width: index == currentPage ? 20 : 6, height: 6)
-                        .animation(.spring(response: 0.35), value: currentPage)
+                        .fill(index == currentPage ? UNColor.brand : UNColor.textTertiary.opacity(0.3))
+                        .frame(width: index == currentPage ? 24 : 6, height: 6)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: currentPage)
                 }
             }
+            .padding(.vertical, UNSpacing.xs)
+            .padding(.horizontal, UNSpacing.lg)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
         }
     }
 }
@@ -36,7 +42,7 @@ private struct BannerCard: View {
     var body: some View {
         ZStack {
             // Gradient background
-            RoundedRectangle(cornerRadius: UBRadius.xl, style: .continuous)
+            RoundedRectangle(cornerRadius: UNRadius.xxl, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -48,30 +54,38 @@ private struct BannerCard: View {
                     )
                 )
 
-            // Decorative circles
+            // Glassmorphism decorative shapes
             GeometryReader { geo in
                 Circle()
-                    .fill(.white.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                    .offset(x: geo.size.width * 0.6, y: -30)
+                    .fill(.white.opacity(0.15))
+                    .blur(radius: 20)
+                    .frame(width: 160, height: 160)
+                    .offset(x: geo.size.width * 0.55, y: -40)
 
                 Circle()
+                    .fill(.white.opacity(0.10))
+                    .blur(radius: 15)
+                    .frame(width: 100, height: 100)
+                    .offset(x: geo.size.width * 0.7, y: 70)
+
+                RoundedRectangle(cornerRadius: 20)
                     .fill(.white.opacity(0.08))
-                    .frame(width: 80, height: 80)
-                    .offset(x: geo.size.width * 0.75, y: 60)
+                    .blur(radius: 10)
+                    .frame(width: 60, height: 60)
+                    .rotationEffect(.degrees(45))
+                    .offset(x: geo.size.width * 0.4, y: 10)
             }
             .clipped()
 
             // Content
             HStack {
-                VStack(alignment: .leading, spacing: UBSpacing.sm) {
+                VStack(alignment: .leading, spacing: UNSpacing.sm) {
                     Text(banner.title)
-                        .font(.title3)
-                        .fontWeight(.bold)
+                        .font(UNFont.headingLarge(.bold))
                         .foregroundStyle(.white)
 
                     Text(banner.subtitle)
-                        .font(.subheadline)
+                        .font(UNFont.bodySmall())
                         .foregroundStyle(.white.opacity(0.85))
                         .lineLimit(2)
                 }
@@ -79,12 +93,11 @@ private struct BannerCard: View {
                 Spacer()
 
                 Text(banner.emoji)
-                    .font(.system(size: 52))
-                    .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                    .font(.system(size: 56))
+                    .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
             }
-            .padding(UBSpacing.xxl)
+            .padding(UNSpacing.xxl)
         }
-        .padding(.horizontal, UBSpacing.xl)
-        .ubShadow(.elevated)
+        .padding(.horizontal, UNSpacing.xl)
     }
 }
