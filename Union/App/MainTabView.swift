@@ -24,12 +24,6 @@ struct MainTabView: View {
                 }
                 .tag(Tab.search)
 
-            RecentView()
-                .tabItem {
-                    Label(Tab.recent.title, systemImage: Tab.recent.icon)
-                }
-                .tag(Tab.recent)
-
             NotificationsView()
                 .tabItem {
                     Label(Tab.notifications.title, systemImage: Tab.notifications.icon)
@@ -42,7 +36,7 @@ struct MainTabView: View {
                 }
                 .tag(Tab.profile)
         }
-        .tint(UBColor.brand)
+        .tint(UNColor.brand)
     }
 }
 
@@ -50,13 +44,12 @@ struct MainTabView: View {
 
 extension MainTabView {
     enum Tab: Hashable {
-        case home, search, recent, notifications, profile
+        case home, search, notifications, profile
 
         var title: String {
             switch self {
             case .home: "홈"
             case .search: "검색"
-            case .recent: "최근"
             case .notifications: "알림"
             case .profile: "마이"
             }
@@ -66,7 +59,6 @@ extension MainTabView {
             switch self {
             case .home: "house.fill"
             case .search: "magnifyingglass"
-            case .recent: "clock.arrow.circlepath"
             case .notifications: "bell.fill"
             case .profile: "person.fill"
             }
