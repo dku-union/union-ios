@@ -7,5 +7,29 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>34.110.138.90</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>미니앱에서 위치 기반 서비스를 사용하려면 위치 권한이 필요합니다.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>미니앱에서 QR 코드 스캔을 위해 카메라 권한이 필요합니다.</string>
 </dict>
 </plist>
