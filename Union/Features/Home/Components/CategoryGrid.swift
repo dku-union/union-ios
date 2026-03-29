@@ -1,41 +1,60 @@
 import SwiftUI
 
+// MARK: - Category Grid (Glass Chips)
+
 struct CategoryGrid: View {
     let categories: [AppCategory]
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: UBSpacing.md) {
+            HStack(spacing: UNSpacing.md) {
                 ForEach(categories) { category in
-                    CategoryPill(category: category)
+                    CategoryChip(category: category)
                 }
             }
-            .padding(.horizontal, UBSpacing.xl)
+            .padding(.horizontal, UNSpacing.xl)
         }
     }
 }
 
-// MARK: - Category Pill
+// MARK: - Category Chip (Glassmorphism)
 
-private struct CategoryPill: View {
+private struct CategoryChip: View {
     let category: AppCategory
 
     var body: some View {
-        VStack(spacing: UBSpacing.sm) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: category.colorHex).opacity(0.12))
-                    .frame(width: 52, height: 52)
+        Button {} label: {
+            VStack(spacing: UNSpacing.sm) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: category.colorHex).opacity(0.15))
+                        .frame(width: 52, height: 52)
 
-                Text(category.emoji)
-                    .font(.title2)
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 52, height: 52)
+                        .opacity(0.5)
+
+                    Text(category.emoji)
+                        .font(.title2)
+                }
+
+                Text(category.name)
+                    .font(UNFont.captionLarge(.semibold))
+                    .foregroundStyle(UNColor.textPrimary)
             }
-
-            Text(category.name)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(UBColor.textSecondary)
+            .frame(width: 68)
         }
-        .frame(width: 64)
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+// MARK: - Scale Button Style
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }

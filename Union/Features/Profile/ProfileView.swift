@@ -6,14 +6,14 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: UBSpacing.xxl) {
+                VStack(spacing: UNSpacing.xxl) {
                     profileCard
                     menuSection
                     infoSection
                 }
-                .padding(UBSpacing.xl)
+                .padding(UNSpacing.xl)
             }
-            .background(UBColor.bgPrimary)
+            .background(UNColor.bgPrimary)
             .navigationTitle("마이페이지")
         }
     }
@@ -21,12 +21,12 @@ struct ProfileView: View {
     // MARK: - Profile Card
 
     private var profileCard: some View {
-        HStack(spacing: UBSpacing.lg) {
+        HStack(spacing: UNSpacing.lg) {
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: UBColor.gradientBluePurple,
+                            colors: UNColor.gradientBluePurple,
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -37,89 +37,89 @@ struct ProfileView: View {
                     .font(.system(size: 30))
             }
 
-            VStack(alignment: .leading, spacing: UBSpacing.xs) {
+            VStack(alignment: .leading, spacing: UNSpacing.xs) {
                 Text(user.nickname)
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundStyle(UBColor.textPrimary)
+                    .foregroundStyle(UNColor.textPrimary)
 
-                HStack(spacing: UBSpacing.sm) {
+                HStack(spacing: UNSpacing.sm) {
                     Text(user.university)
                         .font(.caption)
-                        .foregroundStyle(UBColor.textSecondary)
+                        .foregroundStyle(UNColor.textSecondary)
 
                     if user.isVerified {
                         HStack(spacing: 2) {
                             Image(systemName: "checkmark.seal.fill")
                                 .font(.caption2)
-                                .foregroundStyle(UBColor.mint)
+                                .foregroundStyle(UNColor.mint)
                             Text("인증됨")
                                 .font(.caption2)
-                                .foregroundStyle(UBColor.mint)
+                                .foregroundStyle(UNColor.mint)
                         }
                     }
                 }
 
                 Text(user.department)
                     .font(.caption)
-                    .foregroundStyle(UBColor.textTertiary)
+                    .foregroundStyle(UNColor.textTertiary)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
                 .font(.caption)
-                .foregroundStyle(UBColor.textTertiary)
+                .foregroundStyle(UNColor.textTertiary)
         }
-        .padding(UBSpacing.xl)
-        .background(UBColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: UBRadius.lg, style: .continuous))
-        .ubShadow(.card)
+        .padding(UNSpacing.xl)
+        .background(UNColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
+        .unShadow(.card)
     }
 
     // MARK: - Menu Section
 
     private var menuSection: some View {
         VStack(spacing: 0) {
-            menuRow(icon: "pencil", title: "프로필 수정", color: UBColor.brand)
+            menuRow(icon: "pencil", title: "프로필 수정", color: UNColor.brand)
             Divider().padding(.leading, 52)
-            menuRow(icon: "lock.shield", title: "권한 관리", color: UBColor.violet)
+            menuRow(icon: "lock.shield", title: "권한 관리", color: UNColor.violet)
             Divider().padding(.leading, 52)
-            menuRow(icon: "bell", title: "알림 설정", color: UBColor.amber)
+            menuRow(icon: "bell", title: "알림 설정", color: UNColor.amber)
             Divider().padding(.leading, 52)
-            menuRow(icon: "star", title: "내 리뷰 관리", color: UBColor.coral)
+            menuRow(icon: "star", title: "내 리뷰 관리", color: UNColor.coral)
         }
-        .background(UBColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: UBRadius.lg, style: .continuous))
-        .ubShadow(.subtle)
+        .background(UNColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
+        .unShadow(.subtle)
     }
 
     // MARK: - Info Section
 
     private var infoSection: some View {
         VStack(spacing: 0) {
-            menuRow(icon: "info.circle", title: "앱 정보", color: UBColor.textTertiary)
+            menuRow(icon: "info.circle", title: "앱 정보", color: UNColor.textTertiary)
             Divider().padding(.leading, 52)
-            menuRow(icon: "doc.text", title: "이용약관", color: UBColor.textTertiary)
+            menuRow(icon: "doc.text", title: "이용약관", color: UNColor.textTertiary)
             Divider().padding(.leading, 52)
-            menuRow(icon: "hand.raised", title: "개인정보 처리방침", color: UBColor.textTertiary)
+            menuRow(icon: "hand.raised", title: "개인정보 처리방침", color: UNColor.textTertiary)
             Divider().padding(.leading, 52)
             menuRow(
                 icon: "rectangle.portrait.and.arrow.right",
                 title: "로그아웃",
-                color: UBColor.textSecondary
+                color: UNColor.textSecondary
             )
         }
-        .background(UBColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: UBRadius.lg, style: .continuous))
-        .ubShadow(.subtle)
+        .background(UNColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
+        .unShadow(.subtle)
     }
 
     // MARK: - Menu Row
 
     private func menuRow(icon: String, title: String, color: Color) -> some View {
         Button {} label: {
-            HStack(spacing: UBSpacing.lg) {
+            HStack(spacing: UNSpacing.lg) {
                 Image(systemName: icon)
                     .font(.body)
                     .foregroundStyle(color)
@@ -127,16 +127,16 @@ struct ProfileView: View {
 
                 Text(title)
                     .font(.subheadline)
-                    .foregroundStyle(UBColor.textPrimary)
+                    .foregroundStyle(UNColor.textPrimary)
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
                     .font(.caption2)
-                    .foregroundStyle(UBColor.textTertiary)
+                    .foregroundStyle(UNColor.textTertiary)
             }
-            .padding(.horizontal, UBSpacing.xl)
-            .padding(.vertical, UBSpacing.lg)
+            .padding(.horizontal, UNSpacing.xl)
+            .padding(.vertical, UNSpacing.lg)
         }
     }
 }
