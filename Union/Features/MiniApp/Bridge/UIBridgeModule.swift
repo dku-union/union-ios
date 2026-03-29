@@ -201,4 +201,7 @@ struct UIBridgeModule {
 extension Notification.Name {
     static let miniAppNavigationBarUpdate = Notification.Name("miniAppNavigationBarUpdate")
     static let miniAppCloseRequested = Notification.Name("miniAppCloseRequested")
+    static let miniAppGoBack = Notification.Name("miniAppGoBack")
+    static let miniAppSpaStateChange = Notification.Name("miniAppSpaStateChange")
+    static let miniAppWillNavigate = Notification.Name("miniAppWillNavigate")
 }
