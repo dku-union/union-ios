@@ -10,7 +10,7 @@ struct SectionHeader: View {
             Text(title)
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundStyle(UBColor.textPrimary)
+                .foregroundStyle(UNColor.textPrimary)
 
             Spacer()
 
@@ -18,17 +18,17 @@ struct SectionHeader: View {
                 Button {
                     onMoreTapped?()
                 } label: {
-                    HStack(spacing: UBSpacing.xs) {
+                    HStack(spacing: UNSpacing.xs) {
                         Text("더보기")
                             .font(.subheadline)
-                            .foregroundStyle(UBColor.textTertiary)
+                            .foregroundStyle(UNColor.textTertiary)
                         Image(systemName: "chevron.right")
                             .font(.caption)
-                            .foregroundStyle(UBColor.textTertiary)
+                            .foregroundStyle(UNColor.textTertiary)
                     }
                 }
             }
         }
-        .padding(.horizontal, UBSpacing.xl)
+        .padding(.horizontal, UNSpacing.xl)
     }
 }
