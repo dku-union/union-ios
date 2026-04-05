@@ -23,14 +23,22 @@ actor AnalyticsEventBuffer {
 
     private var events: [AnalyticsEventModel] = []
 
-    /// 자동 플러시 콜백 (임계값 도달 시 호출됨)
-    var onAutoFlush: (([AnalyticsEventModel]) async -> Void)?
+    /// 자동 플러시 콜백 (임계값 도달 시 호출됨).
+    /// actor 외부에서 직접 대입하면 "Actor-isolated property can not be mutated on a nonisolated
+    /// actor instance" 컴파일 에러가 발생하므로, `setFlushCallback(_:)` 메서드를 통해서만 설정한다.
+    private var onAutoFlush: (([AnalyticsEventModel]) async -> Void)?
 
     // MARK: - Init
 
     init(flushThreshold: Int = 20, maxSize: Int = 100) {
         self.flushThreshold = flushThreshold
         self.maxSize = maxSize
+    }
+
+    /// 자동 플러시 콜백을 등록한다.
+    /// actor 격리 컨텍스트 내부에서 `onAutoFlush` 를 수정하기 위해 메서드로 노출.
+    func setFlushCallback(_ callback: @escaping ([AnalyticsEventModel]) async -> Void) {
+        onAutoFlush = callback
     }
 
     // MARK: - API

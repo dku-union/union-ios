@@ -233,8 +233,11 @@ actor AnalyticsManager {
     // MARK: - Private — Periodic Flush
 
     private func connectBufferCallback() async {
-        await buffer.onAutoFlush = { [weak self] events in
-            guard let self, let appId = await self.currentSession?.appId ?? events.first?.appId else { return }
+        // actor-isolated 프로퍼티 직접 대입 대신 메서드를 통해 콜백 등록
+        await buffer.setFlushCallback { [weak self] events in
+            guard let self else { return }
+            let appId = await self.currentSession?.appId ?? events.first?.appId
+            guard let appId else { return }
             await self.performSend(events: events, appId: appId)
         }
     }

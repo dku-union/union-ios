@@ -53,7 +53,9 @@ final class AnalyticsSession: @unchecked Sendable {
 /// 슈퍼앱 전체 세션 관리.
 /// 여러 미니앱에 걸쳐 연속된 세션을 추적한다.
 /// 앱 포그라운드 복귀 시 백그라운드 체류 시간이 기준값 이상이면 새 세션으로 갱신.
-final class SuperappSession {
+// @unchecked Sendable: sessionId 변경은 항상 @MainActor 컨텍스트(앱 라이프사이클 알림)에서만
+// 발생하며, String은 값 타입이므로 읽기 경합이 없다.
+final class SuperappSession: @unchecked Sendable {
 
     static let shared = SuperappSession()
 
