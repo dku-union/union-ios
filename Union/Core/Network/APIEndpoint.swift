@@ -76,4 +76,11 @@ extension APIEndpoint {
 
     static var categories: Self { .init(path: "/categories") }
     static var banners: Self { .init(path: "/banners") }
+    static var discovery: Self { .init(path: "/mini-apps/discovery") }
+
+    /// 미니앱 실행 → 사용 기록 저장 + CDN 번들 URL 반환
+    /// POST /mini-apps/{id}/launch → { "bundleUrl": "https://cdn.union.app/..." }
+    static func launchApp(id: Int) -> Self {
+        .init(path: "/mini-apps/\(id)/launch", method: .post)
+    }
 }

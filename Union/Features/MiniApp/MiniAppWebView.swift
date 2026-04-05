@@ -1,6 +1,12 @@
 import SwiftUI
 import WebKit
 
+// MARK: - Launch API Response
+
+private struct LaunchResponse: Decodable {
+    let bundleUrl: String
+}
+
 // MARK: - MiniAppWebView (SwiftUI)
 
 struct MiniAppWebView: View {
@@ -15,6 +21,10 @@ struct MiniAppWebView: View {
     @State private var resolvedLocal: MiniAppLoadResult?
     @State private var resolvedRemote: URL?
 
+    /// launch API 호출이 완료되었는지 여부.
+    /// true + resolvedLocal/Remote 모두 nil = 배포된 버전 없음
+    @State private var launchResolved = false
+
     init(miniApp: MiniApp) {
         self.miniApp = miniApp
         self._navTitle = State(initialValue: miniApp.name)
@@ -22,35 +32,39 @@ struct MiniAppWebView: View {
 
     var body: some View {
         ZStack {
-            if let webUrl = miniApp.webUrl, !webUrl.isEmpty {
-                if let loadResult = resolvedLocal {
-                    MiniAppNavigationControllerRepresentable(
-                        miniApp: miniApp,
-                        loadResult: loadResult,
-                        isLoading: $isLoading,
-                        navTitle: $navTitle,
-                        loadError: $loadError,
-                        canGoBack: $canGoBack,
-                        onClose: { dismiss() }
-                    )
-                    .ignoresSafeArea(edges: .bottom)
-                } else if let remoteURL = resolvedRemote {
-                    MiniAppWebViewRepresentable(
-                        remoteURL: remoteURL,
-                        miniApp: miniApp,
-                        isLoading: $isLoading,
-                        navTitle: $navTitle,
-                        loadError: $loadError,
-                        canGoBack: $canGoBack,
-                        onClose: { dismiss() }
-                    )
-                    .ignoresSafeArea(edges: .bottom)
-                }
+            if let loadResult = resolvedLocal {
+                // 로컬 .unionapp 패키지 로드
+                MiniAppNavigationControllerRepresentable(
+                    miniApp: miniApp,
+                    loadResult: loadResult,
+                    isLoading: $isLoading,
+                    navTitle: $navTitle,
+                    loadError: $loadError,
+                    canGoBack: $canGoBack,
+                    onClose: { dismiss() }
+                )
+                .ignoresSafeArea(edges: .bottom)
 
-                if let loadError { errorOverlay(message: loadError) }
-            } else {
+            } else if let remoteURL = resolvedRemote {
+                // 원격 HTTP(S) URL 로드
+                MiniAppWebViewRepresentable(
+                    remoteURL: remoteURL,
+                    miniApp: miniApp,
+                    isLoading: $isLoading,
+                    navTitle: $navTitle,
+                    loadError: $loadError,
+                    canGoBack: $canGoBack,
+                    onClose: { dismiss() }
+                )
+                .ignoresSafeArea(edges: .bottom)
+
+            } else if launchResolved {
+                // launch API 완료 후에도 URL 없음 = 배포된 버전 없음
                 noUrlView
             }
+            // else: URL 획득 중 → 아무것도 표시하지 않음 (네비게이션 바 로딩 인디케이터로 표시)
+
+            if let loadError { errorOverlay(message: loadError) }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(navTitle)
@@ -70,13 +84,39 @@ struct MiniAppWebView: View {
                         .fontWeight(.medium)
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if isLoading && !launchResolved {
+                    ProgressView().scaleEffect(0.8)
+                }
+            }
         }
         .task { await resolveURL() }
     }
 
+    // MARK: - URL 해석
+
+    /// 1) miniApp.webUrl 이 있으면 그대로 사용
+    /// 2) 없으면 POST /mini-apps/{id}/launch 호출하여 bundleUrl 획득
     private func resolveURL() async {
-        guard let webUrl = miniApp.webUrl, let url = URL(string: webUrl) else { return }
-        if webUrl.hasSuffix(".unionapp") || webUrl.contains(".unionapp?") {
+        let urlString: String?
+
+        if let w = miniApp.webUrl, !w.isEmpty {
+            // MockData 또는 이미 URL이 내려온 경우
+            urlString = w
+        } else {
+            // launch API로 URL 획득
+            urlString = await fetchLaunchUrl()
+        }
+
+        launchResolved = true
+
+        guard let urlString, let url = URL(string: urlString) else {
+            isLoading = false
+            return
+        }
+
+        if urlString.hasSuffix(".unionapp") || urlString.contains(".unionapp?") {
+            // .unionapp ZIP 다운로드 → 압축 해제 → 로컬 서빙
             do {
                 resolvedLocal = try await MiniAppLoader.load(from: url, appId: String(miniApp.id))
             } catch {
@@ -84,20 +124,26 @@ struct MiniAppWebView: View {
                 isLoading = false
             }
         } else {
+            // 원격 HTTP(S) URL 직접 로드
             resolvedRemote = url
         }
     }
 
-    // MARK: - Sub Views
-
-    private var loadingOverlay: some View {
-        VStack(spacing: 12) {
-            ProgressView().scaleEffect(1.2)
-            Text("로딩 중...").font(.caption).foregroundStyle(.secondary)
+    /// POST /mini-apps/{id}/launch → bundleUrl 반환
+    /// 실패하면 loadError 를 설정하고 nil 반환
+    private func fetchLaunchUrl() async -> String? {
+        do {
+            let apiClient = APIClient(baseURL: APIConfig.baseURL)
+            let response: LaunchResponse = try await apiClient.request(.launchApp(id: miniApp.id))
+            return response.bundleUrl
+        } catch {
+            loadError = "앱을 불러올 수 없습니다: \(error.localizedDescription)"
+            isLoading = false
+            return nil
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.ultraThinMaterial)
     }
+
+    // MARK: - Sub Views
 
     private func errorOverlay(message: String) -> some View {
         VStack(spacing: 16) {
@@ -113,6 +159,7 @@ struct MiniAppWebView: View {
         VStack(spacing: 16) {
             Image(systemName: "app.dashed").font(.system(size: 40)).foregroundStyle(.secondary)
             Text("아직 배포되지 않은 미니앱입니다").font(.headline)
+            Text("퍼블리셔가 앱을 아직 배포하지 않았습니다").font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
