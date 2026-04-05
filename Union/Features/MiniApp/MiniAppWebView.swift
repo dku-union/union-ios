@@ -78,7 +78,7 @@ struct MiniAppWebView: View {
         guard let webUrl = miniApp.webUrl, let url = URL(string: webUrl) else { return }
         if webUrl.hasSuffix(".unionapp") || webUrl.contains(".unionapp?") {
             do {
-                resolvedLocal = try await MiniAppLoader.load(from: url, appId: miniApp.id.uuidString)
+                resolvedLocal = try await MiniAppLoader.load(from: url, appId: String(miniApp.id))
             } catch {
                 loadError = error.localizedDescription
                 isLoading = false
@@ -148,7 +148,11 @@ struct MiniAppNavigationControllerRepresentable: UIViewControllerRepresentable {
         navController.onCanGoBackChange = { [weak coordinator = context.coordinator] canGoBack in
             coordinator?.parent.canGoBack = canGoBack
         }
-        navController.onClose = { [weak coordinator = context.coordinator] in
+        navController.onClose = { [weak coordinator = context.coordinator, weak navController] in
+            // Analytics: app_close 이벤트 전송 후 세션 종료
+            if let rootPage = navController?.viewControllers.first as? MiniAppPageViewController {
+                rootPage.bridgeHandler.notifyMiniAppClosed()
+            }
             coordinator?.parent.onClose()
         }
 
@@ -181,6 +185,9 @@ struct MiniAppNavigationControllerRepresentable: UIViewControllerRepresentable {
         nonisolated(unsafe) private var goBackObserver: NSObjectProtocol?
         nonisolated(unsafe) private var closeObserver: NSObjectProtocol?
         nonisolated(unsafe) private var navBarObserver: NSObjectProtocol?
+
+        /// Analytics app_open 을 첫 번째 WebView 로드 시 1회만 전송하기 위한 플래그
+        private var hasTrackedOpen = false
 
         init(parent: MiniAppNavigationControllerRepresentable) {
             self.parent = parent
@@ -238,9 +245,16 @@ struct MiniAppNavigationControllerRepresentable: UIViewControllerRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             parent.isLoading = false
-            // 현재 페이지의 bridgeHandler에 resume 이벤트 전송
+            // SDK 이벤트: app:resume
             if let page = navController?.topViewController as? MiniAppPageViewController {
                 page.bridgeHandler.sendEvent("app:resume")
+            }
+            // Analytics: 첫 페이지 로드 시 app_open 추적
+            if !hasTrackedOpen {
+                hasTrackedOpen = true
+                if let rootPage = navController?.viewControllers.first as? MiniAppPageViewController {
+                    rootPage.bridgeHandler.notifyWebViewDidLoad()
+                }
             }
         }
 
@@ -298,6 +312,7 @@ struct MiniAppWebViewRepresentable: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let bridgeHandler = BridgeHandler(miniApp: miniApp)
         context.coordinator.bridgeHandler = bridgeHandler
+        context.coordinator.onClose = onClose
 
         let config = WKWebViewConfiguration()
         config.userContentController.add(LeakAvoider(delegate: bridgeHandler), name: "union")
@@ -364,6 +379,11 @@ struct MiniAppWebViewRepresentable: UIViewRepresentable {
         nonisolated(unsafe) private var navBarObserver: NSObjectProtocol?
         nonisolated(unsafe) private var goBackObserver: NSObjectProtocol?
 
+        /// Analytics app_open 1회만 전송하기 위한 플래그
+        private var hasTrackedOpen = false
+        /// 미니앱 종료 콜백 (Analytics app_close 전송 후 호출)
+        var onClose: (() -> Void)?
+
         init(parent: MiniAppWebViewRepresentable) {
             self.parent = parent
         }
@@ -378,7 +398,11 @@ struct MiniAppWebViewRepresentable: UIViewRepresentable {
         func observeNotifications() {
             closeObserver = NotificationCenter.default.addObserver(
                 forName: .miniAppCloseRequested, object: nil, queue: .main
-            ) { [weak self] _ in self?.parent.onClose() }
+            ) { [weak self] _ in
+                // Analytics: 미니앱 종료 전 세션 닫기
+                self?.bridgeHandler?.notifyMiniAppClosed()
+                self?.parent.onClose()
+            }
 
             navBarObserver = NotificationCenter.default.addObserver(
                 forName: .miniAppNavigationBarUpdate, object: nil, queue: .main
@@ -407,6 +431,11 @@ struct MiniAppWebViewRepresentable: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             parent.isLoading = false
             bridgeHandler?.sendEvent("app:resume")
+            // Analytics: 첫 로드 시 app_open 전송
+            if !hasTrackedOpen {
+                hasTrackedOpen = true
+                bridgeHandler?.notifyWebViewDidLoad()
+            }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

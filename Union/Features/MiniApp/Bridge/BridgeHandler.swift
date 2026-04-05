@@ -75,19 +75,47 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
     private let miniApp: MiniApp
     weak var navigationController: MiniAppNavigationController?
 
+    // MARK: - Analytics
+    /// 이 BridgeHandler 가 담당하는 미니앱의 Analytics appId.
+    private let analyticsAppId: String
+
     // 모듈 핸들러
     private lazy var authModule = AuthBridgeModule()
     private lazy var uiModule = UIBridgeModule()
     private lazy var deviceModule = DeviceBridgeModule()
     private lazy var storageModule: StorageBridgeModule = {
-        StorageBridgeModule(appId: miniApp.id.uuidString)
+        StorageBridgeModule(appId: String(miniApp.id))
     }()
     private lazy var analyticsModule = AnalyticsBridgeModule()
     private lazy var networkModule = NetworkBridgeModule()
 
     init(miniApp: MiniApp) {
         self.miniApp = miniApp
+        // appId: union.config.json 값 우선, 없으면 fallback
+        self.analyticsAppId = miniApp.appId ?? "miniapp.\(miniApp.id)"
         super.init()
+
+        // Analytics 세션 시작 (멱등적 — 같은 appId 이면 기존 세션 재사용)
+        Task {
+            await AnalyticsManager.shared.openSession(appId: analyticsAppId)
+        }
+    }
+
+    // MARK: - Analytics Lifecycle Hooks
+
+    /// 첫 페이지 WebView 로드 완료 시 호출 (WKNavigationDelegate.didFinish 에서 트리거).
+    /// 반복 호출되지 않도록 AnalyticsManager 내부에서 중복 방지.
+    func notifyWebViewDidLoad() {
+        Task {
+            await AnalyticsManager.shared.trackLifecycle(eventName: "app_open")
+        }
+    }
+
+    /// 미니앱 종료 시 호출 (onClose 콜백에서 트리거).
+    func notifyMiniAppClosed() {
+        Task {
+            await AnalyticsManager.shared.closeSession()
+        }
     }
 
     func attach(to webView: WKWebView) {
