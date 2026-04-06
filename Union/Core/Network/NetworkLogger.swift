@@ -25,7 +25,7 @@ enum NetworkLogger {
     #if DEBUG
     private static let logger = Logger(subsystem: "com.union.app", category: "Network")
     private static let dividerWidth = 50
-    private static let bodyPreviewLimit = 300
+    private static let bodyPreviewLimit = 3000
     #endif
 
     // MARK: - Request
