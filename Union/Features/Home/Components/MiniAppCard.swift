@@ -4,11 +4,12 @@ import SwiftUI
 
 struct MiniAppCardVertical: View {
     let app: MiniApp
+    var onTap: (MiniApp) -> Void = { _ in }
 
     var body: some View {
         NavigationLink(destination: MiniAppWebView(miniApp: app)) {
             VStack(alignment: .leading, spacing: UNSpacing.md) {
-                AppIconView(emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 56)
+                AppIconView(iconUrl: app.iconUrl, emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 56)
 
                 VStack(alignment: .leading, spacing: UNSpacing.xs) {
                     Text(app.name)
@@ -34,6 +35,7 @@ struct MiniAppCardVertical: View {
             )
         }
         .buttonStyle(ScaleButtonStyle())
+        .simultaneousGesture(TapGesture().onEnded { onTap(app) })
     }
 
     private var ratingView: some View {
@@ -52,11 +54,12 @@ struct MiniAppCardVertical: View {
 
 struct MiniAppCardHorizontal: View {
     let app: MiniApp
+    var onTap: (MiniApp) -> Void = { _ in }
 
     var body: some View {
         NavigationLink(destination: MiniAppWebView(miniApp: app)) {
             HStack(spacing: UNSpacing.lg) {
-                AppIconView(emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 48)
+                AppIconView(iconUrl: app.iconUrl, emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 48)
 
                 VStack(alignment: .leading, spacing: UNSpacing.xs) {
                     Text(app.name)
@@ -108,6 +111,7 @@ struct MiniAppCardHorizontal: View {
             )
         }
         .buttonStyle(ScaleButtonStyle())
+        .simultaneousGesture(TapGesture().onEnded { onTap(app) })
     }
 }
 
@@ -116,12 +120,13 @@ struct MiniAppCardHorizontal: View {
 struct MiniAppCardRanked: View {
     let app: MiniApp
     let rank: Int
+    var onTap: (MiniApp) -> Void = { _ in }
 
     var body: some View {
         NavigationLink(destination: MiniAppWebView(miniApp: app)) {
             VStack(alignment: .leading, spacing: UNSpacing.md) {
                 ZStack(alignment: .topLeading) {
-                    AppIconView(emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 60)
+                    AppIconView(iconUrl: app.iconUrl, emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 60)
 
                     // Rank badge
                     Text("\(rank)")
@@ -134,7 +139,7 @@ struct MiniAppCardRanked: View {
                                 : LinearGradient(colors: [UNColor.textTertiary, UNColor.textTertiary], startPoint: .top, endPoint: .bottom)
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                                                .offset(x: -6, y: -6)
+                        .offset(x: -6, y: -6)
                 }
 
                 VStack(alignment: .leading, spacing: UNSpacing.xs) {
@@ -156,9 +161,11 @@ struct MiniAppCardRanked: View {
                     Text(String(format: "%.1f", app.rating))
                         .font(UNFont.captionLarge(.semibold))
                         .foregroundStyle(UNColor.textSecondary)
-                    Text("(\(app.ratingCount))")
-                        .font(UNFont.captionSmall())
-                        .foregroundStyle(UNColor.textTertiary)
+                    if app.ratingCount > 0 {
+                        Text("(\(app.ratingCount))")
+                            .font(UNFont.captionSmall())
+                            .foregroundStyle(UNColor.textTertiary)
+                    }
                 }
             }
             .frame(width: 130)
@@ -171,5 +178,6 @@ struct MiniAppCardRanked: View {
             )
         }
         .buttonStyle(ScaleButtonStyle())
+        .simultaneousGesture(TapGesture().onEnded { onTap(app) })
     }
 }

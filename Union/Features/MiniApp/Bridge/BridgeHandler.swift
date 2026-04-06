@@ -73,20 +73,49 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
 
     private weak var webView: WKWebView?
     private let miniApp: MiniApp
+    weak var navigationController: MiniAppNavigationController?
+
+    // MARK: - Analytics
+    /// 이 BridgeHandler 가 담당하는 미니앱의 Analytics appId.
+    private let analyticsAppId: String
 
     // 모듈 핸들러
     private lazy var authModule = AuthBridgeModule()
     private lazy var uiModule = UIBridgeModule()
     private lazy var deviceModule = DeviceBridgeModule()
     private lazy var storageModule: StorageBridgeModule = {
-        StorageBridgeModule(appId: miniApp.id.uuidString)
+        StorageBridgeModule(appId: String(miniApp.id))
     }()
     private lazy var analyticsModule = AnalyticsBridgeModule()
     private lazy var networkModule = NetworkBridgeModule()
 
     init(miniApp: MiniApp) {
         self.miniApp = miniApp
+        // appId: union.config.json 값 우선, 없으면 fallback
+        self.analyticsAppId = miniApp.appId ?? "miniapp.\(miniApp.id)"
         super.init()
+
+        // Analytics 세션 시작 (멱등적 — 같은 appId 이면 기존 세션 재사용)
+        Task {
+            await AnalyticsManager.shared.openSession(appId: analyticsAppId)
+        }
+    }
+
+    // MARK: - Analytics Lifecycle Hooks
+
+    /// 첫 페이지 WebView 로드 완료 시 호출 (WKNavigationDelegate.didFinish 에서 트리거).
+    /// 반복 호출되지 않도록 AnalyticsManager 내부에서 중복 방지.
+    func notifyWebViewDidLoad() {
+        Task {
+            await AnalyticsManager.shared.trackLifecycle(eventName: "app_open")
+        }
+    }
+
+    /// 미니앱 종료 시 호출 (onClose 콜백에서 트리거).
+    func notifyMiniAppClosed() {
+        Task {
+            await AnalyticsManager.shared.closeSession()
+        }
     }
 
     func attach(to webView: WKWebView) {
@@ -163,6 +192,39 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
         case "storage":   return try await storageModule.handle(action: action, params: params)
         case "analytics": return try await analyticsModule.handle(action: action, params: params)
         case "network":   return try await networkModule.handle(action: action, params: params)
+        case "navigation":
+            switch action {
+            case "push":
+                let url = params["url"] as? String ?? "/"
+                let title = params["title"] as? String
+                let animated = (params["animated"] as? Bool) ?? true
+                navigationController?.handlePush(url: url, title: title, animated: animated)
+            case "back":
+                navigationController?.handleBack()
+            case "replace":
+                let url = params["url"] as? String ?? "/"
+                navigationController?.handleReplace(url: url)
+            case "prefetch":
+                let url = params["url"] as? String ?? "/"
+                navigationController?.handlePrefetch(url: url)
+            case "willNavigate":
+                // SPA pushState 직전 — 스냅샷 캡처 트리거
+                NotificationCenter.default.post(name: .miniAppWillNavigate, object: nil)
+            case "stateChange":
+                // SPA depth 변경 알림
+                let depth = (params["depth"] as? Int) ?? 0
+                NotificationCenter.default.post(
+                    name: .miniAppSpaStateChange, object: nil,
+                    userInfo: ["depth": depth, "canGoBack": depth > 0]
+                )
+            default: break
+            }
+            return nil
+        case "debug":
+            let level = params["level"] as? String ?? "log"
+            let message = params["message"] as? String ?? ""
+            print("[WebView \(level)] \(message)")
+            return nil
         default:
             throw BridgeModuleError(code: "UNKNOWN_MODULE", message: "Unknown module: \(module)")
         }

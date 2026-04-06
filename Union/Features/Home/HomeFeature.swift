@@ -18,6 +18,12 @@ struct HomeFeature {
         var recentApps: [MiniApp] = []
         var isLoading = false
         var error: String?
+
+        /// 미니앱 실행 기록 (최근 순). 파일에 영속 저장됨.
+        @Shared(.launchedAppIds) var launchedAppIds: [Int] = []
+
+        /// 한 번이라도 미니앱을 실행한 적 있는지 여부 → 스켈레톤 최근 사용 섹션 표시 여부에 사용.
+        var hasEverLaunchedApp: Bool { !launchedAppIds.isEmpty }
     }
 
     // MARK: - Action
@@ -26,6 +32,7 @@ struct HomeFeature {
         // View actions
         case onAppear
         case refresh
+        case appTapped(MiniApp)
 
         // Internal actions (from Effects)
         case homeDataLoaded(HomeData)
@@ -73,6 +80,17 @@ struct HomeFeature {
                     await send(.loadFailed(error.localizedDescription))
                 }
 
+            case .appTapped(let app):
+                // 실행 기록 저장: 중복 제거 후 최신 순으로 삽입, 최대 100개 유지
+                state.$launchedAppIds.withLock { ids in
+                    ids.removeAll { $0 == app.id }
+                    ids.insert(app.id, at: 0)
+                    if ids.count > 100 {
+                        ids = Array(ids.prefix(100))
+                    }
+                }
+                return .none
+
             case .homeDataLoaded(let data):
                 state.banners = data.banners
                 state.categories = data.categories
@@ -94,22 +112,17 @@ struct HomeFeature {
     // MARK: - Private
 
     private func loadHomeData() async throws -> HomeData {
+        async let discovery = client.fetchDiscovery()
         async let banners = client.fetchBanners()
-        async let categories = client.fetchCategories()
-        async let popular = client.fetchPopularApps()
-        async let new = client.fetchNewApps()
-        async let recommended = client.fetchRecommendedApps()
-        async let recent = client.fetchRecentApps()
 
-        return try await HomeData(
-            banners: banners,
-            categories: categories,
-            popularApps: popular,
-            newApps: new,
-            recommendedApps: recommended,
-            recentApps: recent
+        let disc = try await discovery
+        return HomeData(
+            banners: try await banners,
+            categories: disc.categories,
+            popularApps: disc.popularApps,
+            newApps: disc.newApps,
+            recommendedApps: disc.recommendedApps,
+            recentApps: disc.recentApps
         )
     }
 }
-
-

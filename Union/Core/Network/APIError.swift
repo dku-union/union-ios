@@ -8,19 +8,23 @@ enum APIError: LocalizedError {
     case httpError(statusCode: Int, data: Data)
     case decodingFailed(Error)
     case networkUnavailable
+    /// 토큰 갱신 실패 — 재로그인 필요
+    case sessionExpired
 
     var errorDescription: String? {
         switch self {
         case .invalidURL(let path):
-            return "Invalid URL: \(path)"
+            "잘못된 URL: \(path)"
         case .invalidResponse:
-            return "Invalid server response"
+            "서버 응답을 처리할 수 없습니다"
         case .httpError(let code, _):
-            return "Server error (\(code))"
+            "서버 오류 (\(code))"
         case .decodingFailed(let error):
-            return "Data parsing failed: \(error.localizedDescription)"
+            "데이터 파싱 실패: \(error.localizedDescription)"
         case .networkUnavailable:
-            return "Network unavailable"
+            "네트워크에 연결할 수 없습니다"
+        case .sessionExpired:
+            "세션이 만료되었습니다. 다시 로그인해주세요"
         }
     }
 }

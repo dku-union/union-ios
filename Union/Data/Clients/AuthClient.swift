@@ -122,14 +122,14 @@ extension AuthClient: DependencyKey {
 
                 return response
             },
-            refresh: { refreshToken in
-                let body = RefreshRequest(refreshToken: refreshToken)
-                let response: TokenResponse = try await post("/refresh", body: body)
-
-                KeychainStore.save(response.accessToken, for: .accessToken)
-                KeychainStore.save(response.refreshToken, for: .refreshToken)
-
-                return response
+            refresh: { _ in
+                // TokenProvider를 통해 직렬화된 갱신 수행
+                // — 동시 다발 요청 시에도 네트워크 호출은 1회만 발생
+                let accessToken = try await TokenProvider.shared.forceRefresh()
+                return TokenResponse(
+                    accessToken: accessToken,
+                    refreshToken: KeychainStore.load(.refreshToken) ?? ""
+                )
             },
             logout: {
                 KeychainStore.clearAll()
