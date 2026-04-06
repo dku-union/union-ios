@@ -323,6 +323,9 @@ actor AnalyticsManager {
     }
 
     private func deviceModelIdentifier() -> String {
+        #if targetEnvironment(simulator)
+        return ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "Simulator"
+        #else
         var systemInfo = utsname()
         uname(&systemInfo)
         return withUnsafeBytes(of: &systemInfo.machine) { bytes in
@@ -330,5 +333,6 @@ actor AnalyticsManager {
                 .compactMap { $0 != 0 ? String(UnicodeScalar($0)) : nil }
                 .joined()
         }
+        #endif
     }
 }
