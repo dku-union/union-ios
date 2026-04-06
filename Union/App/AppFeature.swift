@@ -6,6 +6,8 @@ import ComposableArchitecture
 @Reducer
 struct AppFeature {
 
+    private enum CancelID { case sessionObserver }
+
     @ObservableState
     struct State {
         var isLoggedIn = KeychainStore.isLoggedIn
@@ -25,8 +27,6 @@ struct AppFeature {
         case logout
     }
 
-    @Dependency(\.authClient) var authClient
-
     var body: some ReducerOf<Self> {
         Scope(state: \.auth, action: \.auth) { AuthFeature() }
         Scope(state: \.home, action: \.home) { HomeFeature() }
@@ -34,25 +34,34 @@ struct AppFeature {
 
         Reduce { state, action in
             switch action {
-            // 앱 시작 시 토큰 유효성 확인
             case .onAppear:
+                // 세션 만료 Notification 리스너 (로그인 상태와 무관하게 항상 활성)
+                // — API 호출 중 TokenProvider가 세션 만료를 감지하면 여기로 전달됨
+                let observeEffect: Effect<Action> = .run { send in
+                    for await _ in NotificationCenter.default.notifications(
+                        named: TokenProvider.sessionExpiredNotification
+                    ) {
+                        await send(.sessionExpired)
+                    }
+                }
+                .cancellable(id: CancelID.sessionObserver)
+
                 guard KeychainStore.isLoggedIn else {
                     state.isLoggedIn = false
-                    return .none
+                    return observeEffect
                 }
-                // refresh token으로 새 토큰 발급 시도
-                return .run { send in
-                    guard let refreshToken = KeychainStore.load(.refreshToken) else {
-                        await send(.sessionExpired)
-                        return
-                    }
+
+                // 토큰 유효성 확인 (만료 임박 시 proactive refresh 수행)
+                let validateEffect: Effect<Action> = .run { send in
                     do {
-                        _ = try await authClient.refresh(refreshToken)
+                        _ = try await TokenProvider.shared.validAccessToken()
                         await send(.sessionValid)
                     } catch {
                         await send(.sessionExpired)
                     }
                 }
+
+                return .merge(validateEffect, observeEffect)
 
             case .sessionValid:
                 state.isLoggedIn = true
