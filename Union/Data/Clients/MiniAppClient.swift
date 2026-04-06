@@ -5,13 +5,19 @@ import ComposableArchitecture
 
 @DependencyClient
 struct MiniAppClient: Sendable {
-    var fetchPopularApps: @Sendable () async throws -> [MiniApp]
-    var fetchNewApps: @Sendable () async throws -> [MiniApp]
-    var fetchRecommendedApps: @Sendable () async throws -> [MiniApp]
-    var fetchRecentApps: @Sendable () async throws -> [MiniApp]
-    var fetchCategories: @Sendable () async throws -> [AppCategory]
+    var fetchDiscovery: @Sendable () async throws -> DiscoveryData
     var fetchBanners: @Sendable () async throws -> [Banner]
     var searchApps: @Sendable (_ query: String) async throws -> [MiniApp]
+}
+
+/// Discovery API 응답을 매핑한 도메인 데이터
+struct DiscoveryData: Equatable, Sendable, Codable {
+    let popularApps: [MiniApp]
+    let newApps: [MiniApp]
+    let recommendedApps: [MiniApp]
+    let recentApps: [MiniApp]
+    let categories: [AppCategory]
+    let trendingKeywords: [String]
 }
 
 // MARK: - Live (API + Cache)
@@ -19,32 +25,20 @@ struct MiniAppClient: Sendable {
 extension MiniAppClient: DependencyKey {
     static let liveValue: MiniAppClient = {
         let cache = QueryCache()
+        let apiClient = APIClient(baseURL: APIConfig.baseURL)
 
         return MiniAppClient(
-            fetchPopularApps: {
-                try await cache.query(key: "popular_apps", staleTime: 300) {
-                    // TODO: Replace with actual API call
-                    // let client = APIClient()
-                    // return try await client.request(.popularApps)
-                    return MockData.popularApps
-                }
-            },
-            fetchNewApps: {
-                try await cache.query(key: "new_apps", staleTime: 300) {
-                    return MockData.newApps
-                }
-            },
-            fetchRecommendedApps: {
-                try await cache.query(key: "recommended_apps", staleTime: 600) {
-                    return MockData.recommendedApps
-                }
-            },
-            fetchRecentApps: {
-                return MockData.recentApps
-            },
-            fetchCategories: {
-                try await cache.query(key: "categories", staleTime: 3600) {
-                    return MockData.categories
+            fetchDiscovery: {
+                try await cache.query(key: "discovery", staleTime: 300) {
+                    let response: DiscoveryResponse = try await apiClient.request(.discovery)
+                    return DiscoveryData(
+                        popularApps: response.popularApps.map { $0.toMiniApp() },
+                        newApps: response.newApps.map { $0.toMiniApp() },
+                        recommendedApps: response.recommendedApps.map { $0.toMiniApp() },
+                        recentApps: response.recentApps.map { $0.toMiniApp() },
+                        categories: response.categories.map { $0.toAppCategory() },
+                        trendingKeywords: response.trendingKeywords
+                    )
                 }
             },
             fetchBanners: {
@@ -68,11 +62,16 @@ extension MiniAppClient: TestDependencyKey {
     static let testValue = MiniAppClient()
 
     static let previewValue = MiniAppClient(
-        fetchPopularApps: { MockData.popularApps },
-        fetchNewApps: { MockData.newApps },
-        fetchRecommendedApps: { MockData.recommendedApps },
-        fetchRecentApps: { MockData.recentApps },
-        fetchCategories: { MockData.categories },
+        fetchDiscovery: {
+            DiscoveryData(
+                popularApps: MockData.popularApps,
+                newApps: MockData.newApps,
+                recommendedApps: Array(MockData.allApps.prefix(5)),
+                recentApps: MockData.recentApps,
+                categories: MockData.categories,
+                trendingKeywords: ["축제", "웨이팅", "스터디", "학식"]
+            )
+        },
         fetchBanners: { MockData.banners },
         searchApps: { _ in MockData.allApps }
     )
