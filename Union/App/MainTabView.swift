@@ -10,6 +10,22 @@ struct MainTabView: View {
     let homeStore: StoreOf<HomeFeature>
     let searchStore: StoreOf<SearchFeature>
 
+    init(homeStore: StoreOf<HomeFeature>, searchStore: StoreOf<SearchFeature>) {
+        self.homeStore = homeStore
+        self.searchStore = searchStore
+
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundColor = .white
+        appearance.shadowColor = UIColor(UNColor.divider)
+        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(UNColor.textTertiary)
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: UIColor(UNColor.textTertiary)
+        ]
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView(store: homeStore)
@@ -36,7 +52,7 @@ struct MainTabView: View {
                 }
                 .tag(Tab.profile)
         }
-        .tint(UNColor.brand)
+        .tint(UNColor.interactive)
     }
 }
 
