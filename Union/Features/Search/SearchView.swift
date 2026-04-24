@@ -39,7 +39,7 @@ struct SearchView: View {
         VStack(alignment: .leading, spacing: UNSpacing.xxxl) {
             VStack(alignment: .leading, spacing: UNSpacing.lg) {
                 Text("인기 검색어")
-                    .font(.headline)
+                    .font(UNFont.headingSmall())
                     .foregroundStyle(UNColor.textPrimary)
                     .padding(.horizontal, UNSpacing.xl)
 
@@ -50,12 +50,11 @@ struct SearchView: View {
                                 store.query = keyword
                             } label: {
                                 Text("#\(keyword)")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(UNColor.brand)
+                                    .font(UNFont.bodyMedium(.medium))
+                                    .foregroundStyle(UNColor.interactive)
                                     .padding(.horizontal, UNSpacing.lg)
                                     .padding(.vertical, UNSpacing.sm)
-                                    .background(UNColor.brandLight)
+                                    .background(UNColor.bgAccent)
                                     .clipShape(Capsule())
                             }
                         }
@@ -66,7 +65,7 @@ struct SearchView: View {
 
             VStack(alignment: .leading, spacing: UNSpacing.lg) {
                 Text("카테고리별 탐색")
-                    .font(.headline)
+                    .font(UNFont.headingSmall())
                     .foregroundStyle(UNColor.textPrimary)
                     .padding(.horizontal, UNSpacing.xl)
 
@@ -80,7 +79,7 @@ struct SearchView: View {
     private var searchResults: some View {
         VStack(alignment: .leading, spacing: UNSpacing.lg) {
             Text("검색 결과 \(store.results.count)개")
-                .font(.subheadline)
+                .font(UNFont.bodyMedium())
                 .foregroundStyle(UNColor.textSecondary)
                 .padding(.horizontal, UNSpacing.xl)
 
@@ -101,10 +100,10 @@ struct SearchView: View {
             Text("🔍")
                 .font(.system(size: 48))
             Text("검색 결과가 없어요")
-                .font(.headline)
+                .font(UNFont.headingMedium())
                 .foregroundStyle(UNColor.textPrimary)
             Text("다른 키워드로 검색해보세요")
-                .font(.subheadline)
+                .font(UNFont.bodyMedium())
                 .foregroundStyle(UNColor.textTertiary)
         }
         .frame(maxWidth: .infinity)

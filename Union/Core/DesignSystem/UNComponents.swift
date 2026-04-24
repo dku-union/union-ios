@@ -11,10 +11,10 @@ struct UNBadge: View {
 
         var foreground: Color {
             switch self {
-            case .brand: UNColor.brand
-            case .coral: UNColor.coral
-            case .mint: UNColor.mint
-            case .amber: UNColor.amber
+            case .brand: UNColor.interactive
+            case .coral: UNColor.error
+            case .mint: UNColor.success
+            case .amber: UNColor.warning
             case .violet: UNColor.violet
             case .subtle: UNColor.textSecondary
             }
@@ -22,12 +22,12 @@ struct UNBadge: View {
 
         var background: Color {
             switch self {
-            case .brand: UNColor.brandLight
-            case .coral: UNColor.coralLight
-            case .mint: UNColor.mintLight
-            case .amber: UNColor.amberLight
+            case .brand: UNColor.bgAccent
+            case .coral: UNColor.red100
+            case .mint: Color(hex: "EDFBF5")
+            case .amber: Color(hex: "FFF8EB")
             case .violet: UNColor.violetLight
-            case .subtle: UNColor.surfacePressed
+            case .subtle: UNColor.bgPressed
             }
         }
     }
@@ -56,11 +56,11 @@ struct UNTag: View {
         } label: {
             Text(text)
                 .font(UNFont.labelSmall())
-                .foregroundStyle(isSelected ? UNColor.textInverse : UNColor.brand)
+                .foregroundStyle(isSelected ? UNColor.textInverse : UNColor.interactive)
                 .padding(.horizontal, UNSpacing.lg)
                 .padding(.vertical, UNSpacing.sm)
                 .background(
-                    Capsule().fill(isSelected ? UNColor.brand : UNColor.brandLight)
+                    Capsule().fill(isSelected ? UNColor.interactive : UNColor.bgAccent)
                 )
         }
         .buttonStyle(.plain)
