@@ -22,7 +22,7 @@ enum MockData {
             id: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!,
             title: "2026 단국대 대동제 D-7",
             subtitle: "축제 일정부터 주점 웨이팅까지 한번에",
-            gradientStartHex: "3B5BFF", gradientEndHex: "8B5CF6", emoji: "🎆"
+            gradientStartHex: "E83A33", gradientEndHex: "EF6560", emoji: "🎆"
         ),
         Banner(
             id: UUID(uuidString: "10000000-0000-0000-0000-000000000002")!,
