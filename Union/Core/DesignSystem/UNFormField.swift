@@ -15,8 +15,8 @@ struct UNFormField: View {
     @FocusState private var isFocused: Bool
 
     private var borderColor: Color {
-        if error != nil { return UNColor.coral }
-        if isFocused { return UNColor.brand }
+        if error != nil { return UNColor.error }
+        if isFocused { return UNColor.interactive }
         return UNColor.border
     }
 
@@ -30,7 +30,7 @@ struct UNFormField: View {
                 if let icon {
                     Image(systemName: icon)
                         .font(.body)
-                        .foregroundStyle(isFocused ? UNColor.brand : UNColor.textTertiary)
+                        .foregroundStyle(isFocused ? UNColor.interactive : UNColor.textTertiary)
                 }
                 TextField(placeholder, text: $text)
                     .font(UNFont.bodyLarge())
@@ -66,7 +66,7 @@ struct UNFormField: View {
                     Text(error)
                         .font(UNFont.captionSmall())
                 }
-                .foregroundStyle(UNColor.coral)
+                .foregroundStyle(UNColor.error)
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -85,8 +85,8 @@ struct UNSecureFormField: View {
     @FocusState private var isFocused: Bool
 
     private var borderColor: Color {
-        if error != nil { return UNColor.coral }
-        if isFocused { return UNColor.brand }
+        if error != nil { return UNColor.error }
+        if isFocused { return UNColor.interactive }
         return UNColor.border
     }
 
@@ -99,7 +99,7 @@ struct UNSecureFormField: View {
             HStack(spacing: UNSpacing.md) {
                 Image(systemName: "lock")
                     .font(.body)
-                    .foregroundStyle(isFocused ? UNColor.brand : UNColor.textTertiary)
+                    .foregroundStyle(isFocused ? UNColor.interactive : UNColor.textTertiary)
 
                 Group {
                     if isRevealed {
@@ -137,7 +137,7 @@ struct UNSecureFormField: View {
                     Text(error)
                         .font(UNFont.captionSmall())
                 }
-                .foregroundStyle(UNColor.coral)
+                .foregroundStyle(UNColor.error)
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -180,14 +180,14 @@ struct UNCodeField: View {
                             .frame(width: 48, height: 56)
                             .background(
                                 RoundedRectangle(cornerRadius: UNRadius.md, style: .continuous)
-                                    .fill(char.isEmpty ? UNColor.bgPrimary : UNColor.brandLight)
+                                    .fill(char.isEmpty ? UNColor.bgPrimary : UNColor.bgAccent)
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: UNRadius.md, style: .continuous)
                                     .stroke(
-                                        isActive ? UNColor.brand :
-                                            error != nil ? UNColor.coral :
-                                            char.isEmpty ? UNColor.border : UNColor.brand.opacity(0.4),
+                                        isActive ? UNColor.interactive :
+                                            error != nil ? UNColor.error :
+                                            char.isEmpty ? UNColor.border : UNColor.interactive.opacity(0.4),
                                         lineWidth: isActive ? 2 : 1
                                     )
                             )
@@ -206,7 +206,7 @@ struct UNCodeField: View {
                     Text(error)
                         .font(UNFont.captionSmall())
                 }
-                .foregroundStyle(UNColor.coral)
+                .foregroundStyle(UNColor.error)
             }
         }
         .onAppear { isFocused = true }
@@ -223,7 +223,7 @@ struct UNStepIndicator: View {
         HStack(spacing: UNSpacing.sm) {
             ForEach(1...totalSteps, id: \.self) { step in
                 Capsule()
-                    .fill(step <= currentStep ? UNColor.brand : UNColor.border)
+                    .fill(step <= currentStep ? UNColor.interactive : UNColor.border)
                     .frame(height: 4)
                     .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentStep)
             }

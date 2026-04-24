@@ -7,7 +7,7 @@ enum UNFont {
     // MARK: - Display
 
     static func displayLarge(_ weight: Font.Weight = .bold) -> Font {
-        .system(size: 32, weight: weight, design: .rounded)
+        .system(size: 34, weight: weight, design: .rounded)
     }
 
     static func displayMedium(_ weight: Font.Weight = .bold) -> Font {
