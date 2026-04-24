@@ -21,7 +21,7 @@ struct BannerCarousel: View {
             HStack(spacing: 6) {
                 ForEach(0..<banners.count, id: \.self) { index in
                     Capsule()
-                        .fill(index == currentPage ? UNColor.brand : UNColor.textTertiary.opacity(0.3))
+                        .fill(index == currentPage ? UNColor.interactive : UNColor.textTertiary.opacity(0.3))
                         .frame(width: index == currentPage ? 24 : 6, height: 6)
                         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: currentPage)
                 }

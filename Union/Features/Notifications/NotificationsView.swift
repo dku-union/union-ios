@@ -18,7 +18,7 @@ struct NotificationsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("설정") {}
-                        .font(.subheadline)
+                        .font(UNFont.bodyMedium())
                         .foregroundStyle(UNColor.textSecondary)
                 }
             }
@@ -41,17 +41,17 @@ private struct NotificationRow: View {
 
     private var iconColor: Color {
         switch notification.type {
-        case .update: return UNColor.brand
-        case .recommendation: return UNColor.amber
-        case .announcement: return UNColor.coral
+        case .update: return UNColor.interactive
+        case .recommendation: return UNColor.warning
+        case .announcement: return UNColor.error
         }
     }
 
     private var iconBgColor: Color {
         switch notification.type {
-        case .update: return UNColor.brandLight
-        case .recommendation: return UNColor.amberLight
-        case .announcement: return UNColor.coralLight
+        case .update: return UNColor.bgAccent
+        case .recommendation: return Color(hex: "FFF8EB")
+        case .announcement: return UNColor.red100
         }
     }
 
@@ -63,14 +63,13 @@ private struct NotificationRow: View {
                     .frame(width: 40, height: 40)
 
                 Image(systemName: icon)
-                    .font(.system(size: 16))
+                    .font(UNFont.bodyLarge())
                     .foregroundStyle(iconColor)
             }
 
             VStack(alignment: .leading, spacing: UNSpacing.xs) {
                 Text(notification.title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .font(UNFont.bodyMedium(.semibold))
                     .foregroundStyle(
                         notification.isRead
                             ? UNColor.textSecondary
@@ -78,12 +77,12 @@ private struct NotificationRow: View {
                     )
 
                 Text(notification.body)
-                    .font(.caption)
+                    .font(UNFont.captionLarge())
                     .foregroundStyle(UNColor.textTertiary)
                     .lineLimit(2)
 
                 Text(notification.createdAt.timeAgoDisplay())
-                    .font(.caption2)
+                    .font(UNFont.captionSmall())
                     .foregroundStyle(UNColor.textTertiary)
                     .padding(.top, 2)
             }
@@ -92,14 +91,13 @@ private struct NotificationRow: View {
 
             if !notification.isRead {
                 Circle()
-                    .fill(UNColor.coral)
+                    .fill(UNColor.interactive)
                     .frame(width: 8, height: 8)
             }
         }
         .padding(UNSpacing.lg)
-        .background(notification.isRead ? UNColor.surface : UNColor.brandLight.opacity(0.3))
+        .background(notification.isRead ? UNColor.surface : UNColor.bgAccent.opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: UNRadius.md, style: .continuous))
         .unShadow(.subtle)
     }
 }
-

@@ -41,8 +41,8 @@ struct MiniAppCardVertical: View {
     private var ratingView: some View {
         HStack(spacing: UNSpacing.xs) {
             Image(systemName: "star.fill")
-                .font(.caption2)
-                .foregroundStyle(UNColor.amber)
+                .font(UNFont.captionSmall())
+                .foregroundStyle(UNColor.warning)
             Text(String(format: "%.1f", app.rating))
                 .font(UNFont.captionLarge(.semibold))
                 .foregroundStyle(UNColor.textSecondary)
@@ -78,8 +78,8 @@ struct MiniAppCardHorizontal: View {
                 VStack(alignment: .trailing, spacing: UNSpacing.xs) {
                     HStack(spacing: 2) {
                         Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundStyle(UNColor.amber)
+                            .font(UNFont.captionSmall())
+                            .foregroundStyle(UNColor.warning)
                         Text(String(format: "%.1f", app.rating))
                             .font(UNFont.captionLarge(.semibold))
                             .foregroundStyle(UNColor.textSecondary)
@@ -135,7 +135,7 @@ struct MiniAppCardRanked: View {
                         .frame(width: 22, height: 22)
                         .background(
                             rank <= 3
-                                ? LinearGradient(colors: UNColor.gradientBluePurple, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                ? LinearGradient(colors: UNColor.gradientRedAccent, startPoint: .topLeading, endPoint: .bottomTrailing)
                                 : LinearGradient(colors: [UNColor.textTertiary, UNColor.textTertiary], startPoint: .top, endPoint: .bottom)
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
@@ -156,8 +156,8 @@ struct MiniAppCardRanked: View {
 
                 HStack(spacing: UNSpacing.xs) {
                     Image(systemName: "star.fill")
-                        .font(.caption2)
-                        .foregroundStyle(UNColor.amber)
+                        .font(UNFont.captionSmall())
+                        .foregroundStyle(UNColor.warning)
                     Text(String(format: "%.1f", app.rating))
                         .font(UNFont.captionLarge(.semibold))
                         .foregroundStyle(UNColor.textSecondary)

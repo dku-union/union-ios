@@ -17,7 +17,7 @@ struct WelcomeView: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    colors: UNColor.gradientBluePurple,
+                                    colors: UNColor.gradientRedAccent,
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -67,7 +67,7 @@ struct WelcomeView: View {
                             Text("이미 계정이 있으신가요?")
                                 .foregroundStyle(UNColor.textTertiary)
                             Text("로그인")
-                                .foregroundStyle(UNColor.brand)
+                                .foregroundStyle(UNColor.interactive)
                                 .fontWeight(.semibold)
                         }
                         .font(UNFont.bodyMedium())
@@ -96,9 +96,9 @@ struct WelcomeView: View {
         HStack(spacing: UNSpacing.md) {
             Image(systemName: icon)
                 .font(.body)
-                .foregroundStyle(UNColor.brand)
+                .foregroundStyle(UNColor.interactive)
                 .frame(width: 32, height: 32)
-                .background(UNColor.brandLight)
+                .background(UNColor.bgAccent)
                 .clipShape(RoundedRectangle(cornerRadius: UNRadius.sm, style: .continuous))
 
             Text(text)

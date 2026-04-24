@@ -109,10 +109,10 @@ struct SignUpCredentialsView: View {
         HStack(spacing: UNSpacing.sm) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
                 .font(UNFont.captionLarge())
-                .foregroundStyle(met ? UNColor.mint : UNColor.textTertiary)
+                .foregroundStyle(met ? UNColor.success : UNColor.textTertiary)
             Text(text)
                 .font(UNFont.captionLarge())
-                .foregroundStyle(met ? UNColor.mint : UNColor.textTertiary)
+                .foregroundStyle(met ? UNColor.success : UNColor.textTertiary)
         }
         .animation(.easeInOut(duration: 0.2), value: met)
     }
