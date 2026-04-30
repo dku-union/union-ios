@@ -73,6 +73,8 @@ struct WelcomeView: View {
                         .font(UNFont.bodyMedium())
                     }
                     .frame(height: 44)
+
+                    publisherEntry
                 }
                 .padding(.horizontal, UNSpacing.xl)
                 .padding(.bottom, UNSpacing.xxxl)
@@ -88,8 +90,39 @@ struct WelcomeView: View {
                 SignUpVerifyView(store: verifyStore)
             case .signUpCode(let codeStore):
                 SignUpCodeView(store: codeStore)
+            case .publisherLoginEmail(let emailStore):
+                PublisherLoginEmailView(store: emailStore)
+            case .publisherLoginCode(let codeStore):
+                PublisherLoginCodeView(store: codeStore)
             }
         }
+    }
+
+    /// 메인 진입점에 작게 노출되는 퍼블리셔 진입 — 일반 사용자에게는 시각적 노이즈가 되지 않도록
+    /// charcoal 톤의 미세한 카드로 처리.
+    private var publisherEntry: some View {
+        Button {
+            store.send(.publisherLoginTapped)
+        } label: {
+            HStack(spacing: UNSpacing.sm) {
+                Image(systemName: "qrcode.viewfinder")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("미니앱 개발자이신가요?")
+                    .font(.system(size: 13, weight: .medium))
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(UNColor.textSecondary)
+            .padding(.horizontal, UNSpacing.md)
+            .padding(.vertical, UNSpacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: UNRadius.sm, style: .continuous)
+                    .fill(UNColor.bgPressed)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.top, UNSpacing.xs)
     }
 
     private func featureRow(icon: String, text: String) -> some View {
