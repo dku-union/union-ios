@@ -25,7 +25,7 @@ struct SignUpCodeView: View {
                     VStack(spacing: UNSpacing.xs) {
                         Text(store.email)
                             .font(UNFont.bodyMedium(.semibold))
-                            .foregroundStyle(UNColor.brand)
+                            .foregroundStyle(UNColor.interactive)
                         Text("으로 전송된 6자리 코드를 입력해주세요")
                             .font(UNFont.bodySmall())
                             .foregroundStyle(UNColor.textSecondary)
@@ -34,7 +34,7 @@ struct SignUpCodeView: View {
                     // 만료 타이머
                     Text(formattedTime(store.expirationSeconds))
                         .font(UNFont.headingMedium(.bold))
-                        .foregroundStyle(store.expirationSeconds <= 60 ? UNColor.coral : UNColor.brand)
+                        .foregroundStyle(store.expirationSeconds <= 60 ? UNColor.error : UNColor.interactive)
                         .monospacedDigit()
                 }
 
@@ -52,7 +52,7 @@ struct SignUpCodeView: View {
                 // Loading
                 if store.isLoading {
                     ProgressView()
-                        .tint(UNColor.brand)
+                        .tint(UNColor.interactive)
                 }
 
                 // Resend
@@ -70,7 +70,7 @@ struct SignUpCodeView: View {
                             store.send(.resendTapped)
                         }
                         .font(UNFont.bodySmall(.semibold))
-                        .foregroundStyle(UNColor.brand)
+                        .foregroundStyle(UNColor.interactive)
                     }
                 }
             }

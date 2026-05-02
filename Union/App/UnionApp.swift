@@ -12,6 +12,9 @@ struct UnionApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView(store: appStore)
+                .onOpenURL { url in
+                    appStore.send(.openURL(url))
+                }
         }
     }
 }

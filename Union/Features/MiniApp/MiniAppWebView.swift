@@ -148,8 +148,8 @@ struct MiniAppWebView: View {
     private func errorOverlay(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "wifi.slash").font(.system(size: 40)).foregroundStyle(.secondary)
-            Text("페이지를 불러올 수 없습니다").font(.headline)
-            Text(message).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text("페이지를 불러올 수 없습니다").font(UNFont.headingSmall())
+            Text(message).font(UNFont.captionLarge()).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.background)
@@ -158,8 +158,8 @@ struct MiniAppWebView: View {
     private var noUrlView: some View {
         VStack(spacing: 16) {
             Image(systemName: "app.dashed").font(.system(size: 40)).foregroundStyle(.secondary)
-            Text("아직 배포되지 않은 미니앱입니다").font(.headline)
-            Text("퍼블리셔가 앱을 아직 배포하지 않았습니다").font(.caption).foregroundStyle(.secondary)
+            Text("아직 배포되지 않은 미니앱입니다").font(UNFont.headingSmall())
+            Text("퍼블리셔가 앱을 아직 배포하지 않았습니다").font(UNFont.captionLarge()).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

@@ -8,8 +8,7 @@ struct SectionHeader: View {
     var body: some View {
         HStack(alignment: .center) {
             Text(title)
-                .font(.title3)
-                .fontWeight(.bold)
+                .font(UNFont.headingLarge())
                 .foregroundStyle(UNColor.textPrimary)
 
             Spacer()
@@ -20,10 +19,10 @@ struct SectionHeader: View {
                 } label: {
                     HStack(spacing: UNSpacing.xs) {
                         Text("더보기")
-                            .font(.subheadline)
+                            .font(UNFont.bodyMedium())
                             .foregroundStyle(UNColor.textTertiary)
                         Image(systemName: "chevron.right")
-                            .font(.caption)
+                            .font(UNFont.captionLarge())
                             .foregroundStyle(UNColor.textTertiary)
                     }
                 }

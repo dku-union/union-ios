@@ -20,12 +20,12 @@ struct SignUpVerifyView: View {
                 // School icon
                 ZStack {
                     Circle()
-                        .fill(UNColor.mintLight)
+                        .fill(Color(hex: "EDFBF5"))
                         .frame(width: 80, height: 80)
 
                     Image(systemName: "building.columns.fill")
                         .font(.system(size: 36))
-                        .foregroundStyle(UNColor.mint)
+                        .foregroundStyle(UNColor.success)
                 }
 
                 // Info
@@ -36,7 +36,7 @@ struct SignUpVerifyView: View {
 
                     Text(store.schoolName)
                         .font(UNFont.headingLarge())
-                        .foregroundStyle(UNColor.brand)
+                        .foregroundStyle(UNColor.interactive)
 
                     Text(store.email)
                         .font(UNFont.bodyMedium())
@@ -47,7 +47,7 @@ struct SignUpVerifyView: View {
                 VStack(alignment: .leading, spacing: UNSpacing.md) {
                     HStack(spacing: UNSpacing.sm) {
                         Image(systemName: "envelope.badge")
-                            .foregroundStyle(UNColor.brand)
+                            .foregroundStyle(UNColor.interactive)
                         Text("인증 메일을 보내드릴게요")
                             .font(UNFont.headingSmall())
                             .foregroundStyle(UNColor.textPrimary)
@@ -60,7 +60,7 @@ struct SignUpVerifyView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(UNSpacing.xl)
-                .background(UNColor.brandLight)
+                .background(UNColor.bgAccent)
                 .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
                 .padding(.horizontal, UNSpacing.xl)
             }
@@ -71,7 +71,7 @@ struct SignUpVerifyView: View {
             if let error = store.error {
                 Text(error)
                     .font(UNFont.captionLarge())
-                    .foregroundStyle(UNColor.coral)
+                    .foregroundStyle(UNColor.error)
                     .padding(.horizontal, UNSpacing.xl)
             }
 

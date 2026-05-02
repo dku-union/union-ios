@@ -34,50 +34,61 @@ struct DesignSystemPreviewView: View {
     private var colorsSection: some View {
         sectionContainer("Colors") {
             VStack(alignment: .leading, spacing: UNSpacing.lg) {
-                colorGroup("Brand", colors: [
-                    ("brand", UNColor.brand),
-                    ("brandDark", UNColor.brandDark),
-                    ("brandLight", UNColor.brandLight),
+                colorGroup("Ice Scale", colors: [
+                    ("ice50", UNColor.ice50),
+                    ("ice100", UNColor.ice100),
+                    ("ice200", UNColor.ice200),
+                    ("ice300", UNColor.ice300),
+                ])
+
+                colorGroup("Charcoal Scale", colors: [
+                    ("900", UNColor.charcoal900),
+                    ("800", UNColor.charcoal800),
+                    ("700", UNColor.charcoal700),
+                    ("600", UNColor.charcoal600),
+                    ("500", UNColor.charcoal500),
+                    ("400", UNColor.charcoal400),
+                ])
+
+                colorGroup("Red Scale", colors: [
+                    ("red600", UNColor.red600),
+                    ("red500", UNColor.red500),
+                    ("red400", UNColor.red400),
+                    ("red300", UNColor.red300),
+                    ("red200", UNColor.red200),
+                    ("red100", UNColor.red100),
                 ])
 
                 colorGroup("Semantic", colors: [
-                    ("coral", UNColor.coral),
-                    ("mint", UNColor.mint),
-                    ("amber", UNColor.amber),
+                    ("interactive", UNColor.interactive),
+                    ("bgAccent", UNColor.bgAccent),
+                    ("bgPrimary", UNColor.bgPrimary),
+                    ("bgPressed", UNColor.bgPressed),
+                ])
+
+                colorGroup("Status", colors: [
+                    ("success", UNColor.success),
+                    ("warning", UNColor.warning),
+                    ("error", UNColor.error),
                     ("violet", UNColor.violet),
                 ])
 
-                colorGroup("Semantic Light", colors: [
-                    ("coralLight", UNColor.coralLight),
-                    ("mintLight", UNColor.mintLight),
-                    ("amberLight", UNColor.amberLight),
-                    ("violetLight", UNColor.violetLight),
-                ])
-
-                colorGroup("Surface", colors: [
-                    ("bgPrimary", UNColor.bgPrimary),
-                    ("surface", UNColor.surface),
-                    ("surfacePressed", UNColor.surfacePressed),
-                    ("border", UNColor.border),
-                ])
-
                 colorGroup("Text", colors: [
-                    ("textPrimary", UNColor.textPrimary),
-                    ("textSecondary", UNColor.textSecondary),
-                    ("textTertiary", UNColor.textTertiary),
+                    ("primary", UNColor.textPrimary),
+                    ("secondary", UNColor.textSecondary),
+                    ("tertiary", UNColor.textTertiary),
                 ])
 
-                // Gradients
                 Text("Gradients")
                     .font(UNFont.captionLarge(.semibold))
                     .foregroundStyle(UNColor.textSecondary)
 
                 HStack(spacing: UNSpacing.sm) {
-                    gradientSwatch(UNColor.gradientBluePurple)
+                    gradientSwatch(UNColor.gradientRedAccent)
+                    gradientSwatch(UNColor.gradientDeepRed)
                     gradientSwatch(UNColor.gradientCoralOrange)
                     gradientSwatch(UNColor.gradientMintTeal)
                     gradientSwatch(UNColor.gradientAmberYellow)
-                    gradientSwatch(UNColor.gradientDeepBlue)
                 }
             }
         }
@@ -123,7 +134,6 @@ struct DesignSystemPreviewView: View {
     private var buttonsSection: some View {
         sectionContainer("Buttons") {
             VStack(alignment: .leading, spacing: UNSpacing.xl) {
-                // Sizes
                 Text("Primary")
                     .font(UNFont.captionLarge(.semibold))
                     .foregroundStyle(UNColor.textSecondary)
@@ -137,7 +147,6 @@ struct DesignSystemPreviewView: View {
                         .unPrimaryButton(.small)
                 }
 
-                // Full Width
                 Button("Full Width Primary") {}
                     .unPrimaryButton(.large, fullWidth: true)
 
@@ -234,10 +243,10 @@ struct DesignSystemPreviewView: View {
     private var chipsSection: some View {
         sectionContainer("Chips") {
             HStack(spacing: UNSpacing.sm) {
-                UNChip(icon: "star.fill", label: "4.7", color: UNColor.amber)
-                UNChip(icon: "person.2.fill", label: "342명", color: UNColor.brand)
-                UNChip(icon: "checkmark.seal.fill", label: "인증됨", color: UNColor.mint)
-                UNChip(icon: "exclamationmark.triangle.fill", label: "신고", color: UNColor.coral)
+                UNChip(icon: "star.fill", label: "4.7", color: UNColor.warning)
+                UNChip(icon: "person.2.fill", label: "342명", color: UNColor.interactive)
+                UNChip(icon: "checkmark.seal.fill", label: "인증됨", color: UNColor.success)
+                UNChip(icon: "exclamationmark.triangle.fill", label: "신고", color: UNColor.error)
             }
         }
     }
@@ -264,7 +273,7 @@ struct DesignSystemPreviewView: View {
 
                 UNCard(shadow: .card) {
                     HStack(spacing: UNSpacing.md) {
-                        AppIconView(emoji: "📚", colorHex: "3B5BFF", size: 48)
+                        AppIconView(emoji: "📚", colorHex: "E83A33", size: 48)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Shadow: card")
                                 .font(UNFont.bodyMedium(.semibold))
@@ -291,6 +300,21 @@ struct DesignSystemPreviewView: View {
                     }
                     .padding(UNSpacing.lg)
                 }
+
+                UNCard(shadow: .strong) {
+                    HStack(spacing: UNSpacing.md) {
+                        AppIconView(emoji: "💪", colorHex: "262725", size: 48)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Shadow: strong")
+                                .font(UNFont.bodyMedium(.semibold))
+                            Text("플로팅 버튼, 바텀 시트")
+                                .font(UNFont.captionLarge())
+                                .foregroundStyle(UNColor.textTertiary)
+                        }
+                        Spacer()
+                    }
+                    .padding(UNSpacing.lg)
+                }
             }
         }
     }
@@ -308,6 +332,8 @@ struct DesignSystemPreviewView: View {
                 spacingRow("xxl", UNSpacing.xxl)
                 spacingRow("xxxl", UNSpacing.xxxl)
                 spacingRow("xxxxl", UNSpacing.xxxxl)
+                spacingRow("jumbo", UNSpacing.jumbo)
+                spacingRow("mega", UNSpacing.mega)
             }
         }
     }
@@ -334,6 +360,7 @@ struct DesignSystemPreviewView: View {
                 shadowSwatch("subtle", .subtle)
                 shadowSwatch("card", .card)
                 shadowSwatch("elevated", .elevated)
+                shadowSwatch("strong", .strong)
             }
             .padding(.vertical, UNSpacing.lg)
         }
@@ -401,7 +428,7 @@ struct DesignSystemPreviewView: View {
                 .foregroundStyle(UNColor.textTertiary)
                 .frame(width: 80, alignment: .leading)
             RoundedRectangle(cornerRadius: 2)
-                .fill(UNColor.brand)
+                .fill(UNColor.interactive)
                 .frame(width: value * 3, height: 16)
         }
     }
@@ -409,7 +436,7 @@ struct DesignSystemPreviewView: View {
     private func radiusSwatch(_ name: String, _ radius: CGFloat) -> some View {
         VStack(spacing: 4) {
             RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .fill(UNColor.brand)
+                .fill(UNColor.interactive)
                 .frame(width: 48, height: 48)
             Text(name)
                 .font(UNFont.captionSmall())

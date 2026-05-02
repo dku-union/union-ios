@@ -54,7 +54,7 @@ struct UNPrimaryButtonStyle: ButtonStyle {
             .padding(.horizontal, size.horizontalPadding)
             .background(
                 RoundedRectangle(cornerRadius: size.radius, style: .continuous)
-                    .fill(isEnabled ? UNColor.brand : UNColor.textTertiary)
+                    .fill(isEnabled ? UNColor.interactive : UNColor.textTertiary)
             )
             .opacity(configuration.isPressed ? 0.85 : 1.0)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
@@ -72,13 +72,13 @@ struct UNSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(size.font)
-            .foregroundStyle(isEnabled ? UNColor.brand : UNColor.textTertiary)
+            .foregroundStyle(isEnabled ? UNColor.interactive : UNColor.textTertiary)
             .frame(maxWidth: isFullWidth ? .infinity : nil)
             .frame(height: size.height)
             .padding(.horizontal, size.horizontalPadding)
             .background(
                 RoundedRectangle(cornerRadius: size.radius, style: .continuous)
-                    .stroke(isEnabled ? UNColor.brand : UNColor.textTertiary, lineWidth: 1.5)
+                    .stroke(isEnabled ? UNColor.interactive : UNColor.textTertiary, lineWidth: 1.5)
             )
             .opacity(configuration.isPressed ? 0.85 : 1.0)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
@@ -95,12 +95,12 @@ struct UNGhostButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(size.font)
-            .foregroundStyle(isEnabled ? UNColor.brand : UNColor.textTertiary)
+            .foregroundStyle(isEnabled ? UNColor.textSecondary : UNColor.textTertiary)
             .frame(height: size.height)
             .padding(.horizontal, size.horizontalPadding)
             .background(
                 RoundedRectangle(cornerRadius: size.radius, style: .continuous)
-                    .fill(configuration.isPressed ? UNColor.brandLight : Color.clear)
+                    .fill(configuration.isPressed ? UNColor.bgPressed : Color.clear)
             )
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
@@ -121,7 +121,7 @@ struct UNDangerButtonStyle: ButtonStyle {
             .padding(.horizontal, size.horizontalPadding)
             .background(
                 RoundedRectangle(cornerRadius: size.radius, style: .continuous)
-                    .fill(UNColor.coral)
+                    .fill(UNColor.error)
             )
             .opacity(configuration.isPressed ? 0.85 : 1.0)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)

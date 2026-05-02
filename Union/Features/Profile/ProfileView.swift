@@ -26,7 +26,7 @@ struct ProfileView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: UNColor.gradientBluePurple,
+                            colors: UNColor.gradientRedAccent,
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -39,36 +39,35 @@ struct ProfileView: View {
 
             VStack(alignment: .leading, spacing: UNSpacing.xs) {
                 Text(user.nickname)
-                    .font(.title3)
-                    .fontWeight(.bold)
+                    .font(UNFont.headingLarge())
                     .foregroundStyle(UNColor.textPrimary)
 
                 HStack(spacing: UNSpacing.sm) {
                     Text(user.university)
-                        .font(.caption)
+                        .font(UNFont.captionLarge())
                         .foregroundStyle(UNColor.textSecondary)
 
                     if user.isVerified {
                         HStack(spacing: 2) {
                             Image(systemName: "checkmark.seal.fill")
-                                .font(.caption2)
-                                .foregroundStyle(UNColor.mint)
+                                .font(UNFont.captionSmall())
+                                .foregroundStyle(UNColor.success)
                             Text("인증됨")
-                                .font(.caption2)
-                                .foregroundStyle(UNColor.mint)
+                                .font(UNFont.captionSmall())
+                                .foregroundStyle(UNColor.success)
                         }
                     }
                 }
 
                 Text(user.department)
-                    .font(.caption)
+                    .font(UNFont.captionLarge())
                     .foregroundStyle(UNColor.textTertiary)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.caption)
+                .font(UNFont.captionSmall())
                 .foregroundStyle(UNColor.textTertiary)
         }
         .padding(UNSpacing.xl)
@@ -81,13 +80,13 @@ struct ProfileView: View {
 
     private var menuSection: some View {
         VStack(spacing: 0) {
-            menuRow(icon: "pencil", title: "프로필 수정", color: UNColor.brand)
+            menuRow(icon: "pencil", title: "프로필 수정", color: UNColor.interactive)
             Divider().padding(.leading, 52)
             menuRow(icon: "lock.shield", title: "권한 관리", color: UNColor.violet)
             Divider().padding(.leading, 52)
-            menuRow(icon: "bell", title: "알림 설정", color: UNColor.amber)
+            menuRow(icon: "bell", title: "알림 설정", color: UNColor.warning)
             Divider().padding(.leading, 52)
-            menuRow(icon: "star", title: "내 리뷰 관리", color: UNColor.coral)
+            menuRow(icon: "star", title: "내 리뷰 관리", color: UNColor.error)
         }
         .background(UNColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
@@ -126,13 +125,13 @@ struct ProfileView: View {
                     .frame(width: 24)
 
                 Text(title)
-                    .font(.subheadline)
+                    .font(UNFont.bodyMedium())
                     .foregroundStyle(UNColor.textPrimary)
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.caption2)
+                    .font(UNFont.captionSmall())
                     .foregroundStyle(UNColor.textTertiary)
             }
             .padding(.horizontal, UNSpacing.xl)

@@ -68,8 +68,8 @@ struct HomeView: View {
             UNColor.bgPrimary.ignoresSafeArea()
             LinearGradient(
                 colors: [
-                    UNColor.brand.opacity(0.06),
-                    UNColor.violet.opacity(0.03),
+                    UNColor.interactive.opacity(0.06),
+                    UNColor.red400.opacity(0.03),
                     Color.clear
                 ],
                 startPoint: .top,
@@ -85,10 +85,10 @@ struct HomeView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Union")
-                    .font(.system(size: 28, weight: .black, design: .rounded))
+                    .font(UNFont.displayMedium(.black))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: UNColor.gradientBluePurple,
+                            colors: UNColor.gradientRedAccent,
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -102,7 +102,7 @@ struct HomeView: View {
                 clearMiniAppCache()
             } label: {
                 Image(systemName: "trash")
-                    .font(.caption)
+                    .font(UNFont.captionLarge())
                     .foregroundStyle(UNColor.textTertiary)
                     .frame(width: 40, height: 40)
                     .background(.ultraThinMaterial)
@@ -111,14 +111,14 @@ struct HomeView: View {
             Button {} label: {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell")
-                        .font(.title3)
+                        .font(UNFont.headingLarge())
                         .foregroundStyle(UNColor.textSecondary)
                         .frame(width: 40, height: 40)
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
 
                     Circle()
-                        .fill(UNColor.coral)
+                        .fill(UNColor.interactive)
                         .frame(width: 10, height: 10)
                         .overlay(Circle().stroke(.white, lineWidth: 2))
                         .offset(x: 2, y: -1)
