@@ -14,12 +14,25 @@ struct AppFeature {
         var auth = AuthFeature.State()
         var home = HomeFeature.State()
         var search = SearchFeature.State()
+        var publisher = PublisherFeature.State()
+        /// 현재 access token 의 role claim (UI 분기용 - publisher 탭 노출 결정).
+        /// 로그인 직후/세션 만료 시 갱신된다.
+        var role: String? = JWTDecoder.currentRole()
+
+        /// JWT의 role 이 ROLE_PUBLISHER 또는 ROLE_ADMIN 인지 — publisher 전용 탭 노출 여부.
+        var isPublisher: Bool {
+            switch role {
+            case "ROLE_PUBLISHER", "ROLE_ADMIN": true
+            default: false
+            }
+        }
     }
 
     enum Action {
         case auth(AuthFeature.Action)
         case home(HomeFeature.Action)
         case search(SearchFeature.Action)
+        case publisher(PublisherFeature.Action)
         case onAppear
         case checkAuth
         case sessionValid
@@ -33,6 +46,7 @@ struct AppFeature {
         Scope(state: \.auth, action: \.auth) { AuthFeature() }
         Scope(state: \.home, action: \.home) { HomeFeature() }
         Scope(state: \.search, action: \.search) { SearchFeature() }
+        Scope(state: \.publisher, action: \.publisher) { PublisherFeature() }
 
         Reduce { state, action in
             switch action {
@@ -67,27 +81,32 @@ struct AppFeature {
 
             case .sessionValid:
                 state.isLoggedIn = true
+                state.role = JWTDecoder.currentRole()
                 return .none
 
             case .sessionExpired:
                 KeychainStore.clearAll()
                 state.isLoggedIn = false
+                state.role = nil
                 return .none
 
             // 로그인/회원가입 성공 → 메인으로 전환
             case .auth(.path(.element(_, action: .login(.loginSucceeded)))):
                 state.isLoggedIn = true
+                state.role = JWTDecoder.currentRole()
                 state.auth.path.removeAll()
                 return .none
 
             case .auth(.path(.element(_, action: .signUpCode(.signUpCompleted)))):
                 state.isLoggedIn = true
+                state.role = JWTDecoder.currentRole()
                 state.auth.path.removeAll()
                 return .none
 
             // Publisher 로그인 성공 → 우선 isLoggedIn 처리만 (post-login 라우팅은 후속 작업)
             case .auth(.path(.element(_, action: .publisherLoginCode(.loginSucceeded)))):
                 state.isLoggedIn = true
+                state.role = JWTDecoder.currentRole()
                 state.auth.path.removeAll()
                 return .none
 
@@ -108,10 +127,16 @@ struct AppFeature {
             case .logout:
                 KeychainStore.clearAll()
                 state.isLoggedIn = false
+                state.role = nil
                 state.auth = AuthFeature.State()
+                state.publisher = PublisherFeature.State()
                 return .none
 
-            case .auth, .home, .search:
+            // PublisherView 의 로그아웃 버튼 → AppFeature.logout 으로 위임
+            case .publisher(.logoutTapped):
+                return .send(.logout)
+
+            case .auth, .home, .search, .publisher:
                 return .none
             }
         }
