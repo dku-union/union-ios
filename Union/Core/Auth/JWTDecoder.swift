@@ -11,6 +11,8 @@ enum JWTDecoder {
         let expiresAt: Date
         let issuedAt: Date?
         let subject: String?
+        /// `role` claim — 백엔드 JWT에는 `ROLE_USER`/`ROLE_PUBLISHER`/`ROLE_ADMIN` 중 하나가 들어있다.
+        let role: String?
 
         /// 토큰이 이미 만료되었는지 확인
         var isExpired: Bool {
@@ -20,6 +22,22 @@ enum JWTDecoder {
         /// 지정된 시간(초) 이내에 만료 예정인지 확인
         func isExpiring(within interval: TimeInterval) -> Bool {
             expiresAt.timeIntervalSinceNow < interval
+        }
+    }
+
+    // MARK: - Role helpers
+
+    /// 현재 keychain에 저장된 access token의 role claim. 토큰이 없거나 파싱 실패 시 nil.
+    static func currentRole() -> String? {
+        guard let token = KeychainStore.load(.accessToken) else { return nil }
+        return decode(token)?.role
+    }
+
+    /// 퍼블리셔(또는 admin) 권한 보유 여부.
+    static var isPublisher: Bool {
+        switch currentRole() {
+        case "ROLE_PUBLISHER", "ROLE_ADMIN": true
+        default: false
         }
     }
 
@@ -40,7 +58,8 @@ enum JWTDecoder {
         return Payload(
             expiresAt: Date(timeIntervalSince1970: exp),
             issuedAt: (json["iat"] as? TimeInterval).map { Date(timeIntervalSince1970: $0) },
-            subject: json["sub"] as? String
+            subject: json["sub"] as? String,
+            role: json["role"] as? String
         )
     }
 
