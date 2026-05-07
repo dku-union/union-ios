@@ -9,7 +9,7 @@ import Foundation
 struct PublisherMiniApp: Identifiable, Hashable, Codable, Sendable {
     let id: Int
     let name: String
-    let description: String
+    let description: String?
     let iconUrl: String?
     let workspaceName: String
     let status: Status

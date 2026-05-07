@@ -33,5 +33,29 @@ struct AppRootView: View {
         .animation(.easeInOut(duration: 0.3), value: store.isLoggedIn)
         .animation(.easeInOut(duration: 0.3), value: store.isPublisher)
         .onAppear { store.send(.onAppear) }
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.runningTest != nil },
+                set: { if !$0 { store.send(.dismissRunningTest) } }
+            )
+        ) {
+            if let run = store.runningTest {
+                NavigationStack {
+                    MiniAppWebView(miniApp: run.miniApp)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+        }
+        .alert(
+            "테스트 실행 실패",
+            isPresented: Binding(
+                get: { store.testRedeemError != nil },
+                set: { if !$0 { store.send(.dismissTestRedeemError) } }
+            ),
+            actions: {
+                Button("확인", role: .cancel) { store.send(.dismissTestRedeemError) }
+            },
+            message: { Text(store.testRedeemError ?? "") }
+        )
     }
 }

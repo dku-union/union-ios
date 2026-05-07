@@ -1,5 +1,6 @@
 import SwiftUI
 import ComposableArchitecture
+import PhotosUI
 
 // MARK: - Publisher View
 
@@ -7,6 +8,17 @@ import ComposableArchitecture
 /// Tap 시 버전 리스트로 push.
 struct PublisherView: View {
     @Bindable var store: StoreOf<PublisherFeature>
+
+    /// QR 스캐너 sheet 표시 여부 (UI-local 상태).
+    @State private var showCameraScanner = false
+    /// PhotosPicker presentation flag — Menu 내부에 PhotosPicker 를 두면
+    /// 메뉴가 닫히는 순간 picker view 가 함께 dismiss 되어 시트가 뜨지 않는다.
+    /// 반드시 `.photosPicker(isPresented:)` 형태로 부모 뷰에서 띄워야 한다.
+    @State private var showPhotosPicker = false
+    /// PhotosPicker 선택값.
+    @State private var photosPickerItem: PhotosPickerItem?
+    /// QR 디코딩 실패 등 에러 메시지.
+    @State private var qrError: String?
 
     var body: some View {
         NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
@@ -37,6 +49,21 @@ struct PublisherView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
+                        Section("QR로 테스트 앱 열기") {
+                            Button {
+                                showCameraScanner = true
+                            } label: {
+                                Label("카메라로 스캔", systemImage: "qrcode.viewfinder")
+                            }
+                            Button {
+                                showPhotosPicker = true
+                            } label: {
+                                Label("앨범에서 선택", systemImage: "photo.on.rectangle")
+                            }
+                        }
+
+                        Divider()
+
                         Button(role: .destructive) {
                             store.send(.logoutTapped)
                         } label: {
@@ -48,11 +75,72 @@ struct PublisherView: View {
                     }
                 }
             }
+            .fullScreenCover(isPresented: $showCameraScanner) {
+                CameraQRScannerView(
+                    onScan: { code in
+                        showCameraScanner = false
+                        handleScannedPayload(code)
+                    },
+                    onCancel: {
+                        showCameraScanner = false
+                    }
+                )
+                .ignoresSafeArea()
+            }
+            .photosPicker(
+                isPresented: $showPhotosPicker,
+                selection: $photosPickerItem,
+                matching: .images,
+                photoLibrary: .shared()
+            )
+            .onChange(of: photosPickerItem) { _, newValue in
+                guard let item = newValue else { return }
+                Task { await handlePhotosPick(item) }
+            }
+            .alert(
+                "QR 인식 실패",
+                isPresented: Binding(
+                    get: { qrError != nil },
+                    set: { if !$0 { qrError = nil } }
+                ),
+                actions: { Button("확인", role: .cancel) { qrError = nil } },
+                message: { Text(qrError ?? "") }
+            )
         } destination: { store in
             switch store.case {
             case .appDetail(let detailStore):
                 PublisherAppDetailView(store: detailStore)
             }
+        }
+    }
+
+    // MARK: - QR Handling
+
+    /// 스캔/디코딩된 payload 를 URL 로 검증한 뒤 부모로 위임.
+    private func handleScannedPayload(_ raw: String) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed), url.scheme == "union-app" else {
+            qrError = "Union 테스트 QR 이 아닙니다. (\(trimmed.prefix(80)))"
+            return
+        }
+        store.send(.qrScanned(url))
+    }
+
+    private func handlePhotosPick(_ item: PhotosPickerItem) async {
+        defer { photosPickerItem = nil }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data) else {
+                qrError = "이미지를 불러오지 못했습니다."
+                return
+            }
+            guard let payload = QRDecoder.decode(image) else {
+                qrError = "이미지에서 QR 코드를 찾지 못했습니다."
+                return
+            }
+            handleScannedPayload(payload)
+        } catch {
+            qrError = error.localizedDescription
         }
     }
 

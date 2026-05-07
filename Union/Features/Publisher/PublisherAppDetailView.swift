@@ -74,7 +74,7 @@ struct PublisherAppDetailView: View {
                 Text(store.miniApp.workspaceName)
                     .font(UNFont.captionSmall())
                     .foregroundStyle(UNColor.textTertiary)
-                Text(store.miniApp.description)
+                Text(store.miniApp.description ?? "")
                     .font(UNFont.captionLarge())
                     .foregroundStyle(UNColor.textSecondary)
                     .lineLimit(2)

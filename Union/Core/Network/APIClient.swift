@@ -23,7 +23,7 @@ actor APIClient {
         self.session = session
         self.tokenProvider = tokenProvider
         self.decoder = JSONDecoder()
-        self.decoder.dateDecodingStrategy = .iso8601
+        self.decoder.dateDecodingStrategy = .flexibleISO8601
     }
 
     // MARK: - Authenticated Request
