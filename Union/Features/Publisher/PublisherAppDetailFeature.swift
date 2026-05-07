@@ -102,7 +102,7 @@ struct PublisherAppDetailFeature {
                 let synthetic = MiniApp(
                     id: bundle.miniAppId,
                     name: bundle.miniAppName,
-                    description: state.miniApp.description,
+                    description: state.miniApp.description ?? "",
                     publisher: "테스트 빌드",
                     category: "test",
                     iconUrl: state.miniApp.iconUrl,
@@ -117,7 +117,11 @@ struct PublisherAppDetailFeature {
                     appId: nil
                 )
                 state.runningTest = TestRun(miniApp: synthetic, versionNumber: bundle.versionNumber)
-                return .none
+                // testedAt 마크 → dashboard "심사 요청" 활성화. fire-and-forget.
+                let versionId = bundle.versionId
+                return .run { [client] _ in
+                    try? await client.markTested(versionId: versionId)
+                }
 
             case .testFailed(_, let message):
                 state.preparingVersionId = nil

@@ -19,6 +19,13 @@ struct AppFeature {
         /// 로그인 직후/세션 만료 시 갱신된다.
         var role: String? = JWTDecoder.currentRole()
 
+        /// 스킴으로 진입했지만 아직 redeem 되지 않은 테스트 컨텍스트.
+        /// 로그인 단계가 끝나면 자동으로 redeem 한다.
+        var pendingTestContext: PublisherTestContext?
+        /// redeem 완료 후 fullScreenCover 로 표시되는 테스트 WebView 상태.
+        var runningTest: TestRun?
+        var testRedeemError: String?
+
         /// JWT의 role 이 ROLE_PUBLISHER 또는 ROLE_ADMIN 인지 — publisher 전용 탭 노출 여부.
         var isPublisher: Bool {
             switch role {
@@ -26,6 +33,12 @@ struct AppFeature {
             default: false
             }
         }
+    }
+
+    /// 스킴 진입으로 만들어진 테스트 실행 — 합성 MiniApp + 표시용 버전 번호.
+    struct TestRun: Equatable {
+        let miniApp: MiniApp
+        let versionNumber: String
     }
 
     enum Action {
@@ -38,9 +51,17 @@ struct AppFeature {
         case sessionValid
         case sessionExpired
         case logout
-        /// 외부 URL(예: union-app://test-app?versionId=...) 진입 처리
+        /// 외부 URL(예: union-app://test-app?token=<uuid>) 진입 처리
         case openURL(URL)
+        /// `pendingTestContext`를 이용해 테스트 번들을 redeem 하고 WebView 표시까지 진행
+        case redeemPendingTest
+        case testRedeemed(TestBundleInfo)
+        case testRedeemFailed(String)
+        case dismissRunningTest
+        case dismissTestRedeemError
     }
+
+    @Dependency(\.publisherAppsClient) var publisherAppsClient
 
     var body: some ReducerOf<Self> {
         Scope(state: \.auth, action: \.auth) { AuthFeature() }
@@ -103,22 +124,83 @@ struct AppFeature {
                 state.auth.path.removeAll()
                 return .none
 
-            // Publisher 로그인 성공 → 우선 isLoggedIn 처리만 (post-login 라우팅은 후속 작업)
+            // Publisher 로그인 성공 → isLoggedIn 처리 후, 스킴으로 들어온 컨텍스트가 있으면 자동 redeem.
             case .auth(.path(.element(_, action: .publisherLoginCode(.loginSucceeded)))):
                 state.isLoggedIn = true
                 state.role = JWTDecoder.currentRole()
                 state.auth.path.removeAll()
+                if state.pendingTestContext?.isRedeemable == true {
+                    return .send(.redeemPendingTest)
+                }
                 return .none
 
             case .openURL(let url):
                 guard let context = parsePublisherTestURL(url) else {
                     return .none
                 }
-                // 로그인 상태와 무관하게 publisher 인증으로 진입.
-                // (이미 publisher로 로그인되어 있어도 컨텍스트를 명시적으로 다시 받기 위함.
-                //  post-login 자동 진입은 후속 작업.)
+                // 이미 publisher(또는 admin)로 로그인된 상태면 재로그인 없이 즉시 redeem.
+                if state.isLoggedIn, state.isPublisher, context.isRedeemable {
+                    state.pendingTestContext = context
+                    return .send(.redeemPendingTest)
+                }
+                // 미로그인 또는 일반 사용자 → publisher 로그인부터 진행.
+                // 로그인 완료 시 위 case 가 redeem 까지 이어준다.
+                state.pendingTestContext = context
                 state.isLoggedIn = false
                 return .send(.auth(.publisherLoginRequested(context)))
+
+            case .redeemPendingTest:
+                guard let token = state.pendingTestContext?.token else {
+                    state.pendingTestContext = nil
+                    return .none
+                }
+                state.pendingTestContext = nil
+                return .run { send in
+                    do {
+                        let bundle = try await publisherAppsClient.redeemTestBundle(token: token)
+                        await send(.testRedeemed(bundle))
+                    } catch {
+                        await send(.testRedeemFailed(error.localizedDescription))
+                    }
+                }
+
+            case .testRedeemed(let bundle):
+                let synthetic = MiniApp(
+                    id: bundle.miniAppId,
+                    name: bundle.miniAppName,
+                    description: "",
+                    publisher: "테스트 빌드",
+                    category: "test",
+                    iconUrl: nil,
+                    iconEmoji: nil,
+                    iconColorHex: nil,
+                    rating: 0,
+                    ratingCount: 0,
+                    isNew: false,
+                    isPopular: false,
+                    createdAt: Date(),
+                    webUrl: bundle.bundleUrl,
+                    appId: nil
+                )
+                state.runningTest = TestRun(miniApp: synthetic, versionNumber: bundle.versionNumber)
+                // 테스트가 실제로 시작되는 시점에 testedAt 마크 → dashboard "심사 요청" 활성화.
+                // 실패해도 사용자 흐름엔 영향 없도록 fire-and-forget.
+                let versionId = bundle.versionId
+                return .run { _ in
+                    try? await publisherAppsClient.markTested(versionId: versionId)
+                }
+
+            case .testRedeemFailed(let message):
+                state.testRedeemError = message
+                return .none
+
+            case .dismissRunningTest:
+                state.runningTest = nil
+                return .none
+
+            case .dismissTestRedeemError:
+                state.testRedeemError = nil
+                return .none
 
             case .checkAuth:
                 state.isLoggedIn = KeychainStore.isLoggedIn
@@ -135,6 +217,10 @@ struct AppFeature {
             // PublisherView 의 로그아웃 버튼 → AppFeature.logout 으로 위임
             case .publisher(.logoutTapped):
                 return .send(.logout)
+
+            // PublisherView 의 More → QR 스캔 결과 → 기존 .openURL 파이프라인으로 위임
+            case .publisher(.qrScanned(let url)):
+                return .send(.openURL(url))
 
             case .auth, .home, .search, .publisher:
                 return .none

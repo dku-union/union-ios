@@ -18,6 +18,9 @@ struct PublisherAppsClient: Sendable {
     var listVersions: @Sendable (_ miniAppId: Int) async throws -> [AppVersionInfo]
     var createTestSession: @Sendable (_ versionId: UUID) async throws -> URL
     var redeemTestBundle: @Sendable (_ token: String) async throws -> TestBundleInfo
+    /// 테스트 완료 마크 — `testedAt` 을 채워 dashboard "심사 요청" 버튼을 활성화한다.
+    /// (`POST /app-versions/{id}/test-complete`)
+    var markTested: @Sendable (_ versionId: UUID) async throws -> Void
 }
 
 // MARK: - Bundle Info
@@ -79,6 +82,13 @@ extension PublisherAppsClient: DependencyKey {
                     queryItems: [URLQueryItem(name: "token", value: token)]
                 )
                 return try await apiClient.request(endpoint)
+            },
+            markTested: { versionId in
+                let endpoint = APIEndpoint(
+                    path: "/app-versions/\(versionId.uuidString)/test-complete",
+                    method: .post
+                )
+                let _: AppVersionInfo = try await apiClient.request(endpoint)
             }
         )
     }()
@@ -131,7 +141,8 @@ extension PublisherAppsClient: TestDependencyKey {
                 versionNumber: "1.0.1",
                 bundleUrl: "https://cdn.example.com/sample.unionapp?Expires=0"
             )
-        }
+        },
+        markTested: { _ in }
     )
 }
 

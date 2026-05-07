@@ -27,6 +27,8 @@ struct PublisherFeature {
         case appsLoaded([PublisherMiniApp])
         case loadFailed(String)
         case logoutTapped
+        /// QR 스캔(카메라/앨범) 결과 — 부모(AppFeature)가 가로채 `.openURL`로 위임.
+        case qrScanned(URL)
         case path(StackActionOf<Path>)
     }
 
@@ -66,6 +68,10 @@ struct PublisherFeature {
 
             case .logoutTapped:
                 // 부모(AppFeature)가 이 action을 가로채 .logout을 수행한다.
+                return .none
+
+            case .qrScanned:
+                // 부모(AppFeature)가 가로채 .openURL로 라우팅한다.
                 return .none
 
             case .path:
