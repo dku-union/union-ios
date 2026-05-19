@@ -6,8 +6,6 @@ import ComposableArchitecture
 struct SearchView: View {
     @Bindable var store: StoreOf<SearchFeature>
 
-    private let trendingKeywords = ["축제", "웨이팅", "스터디", "학식", "중고거래", "소개팅"]
-
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -25,11 +23,15 @@ struct SearchView: View {
             .background(UNColor.bgPrimary)
             .navigationTitle("검색")
             .searchable(text: $store.query, prompt: "미니앱 검색")
+            .onSubmit(of: .search) {
+                store.send(.submitSearch)
+            }
             .overlay {
                 if store.isSearching {
                     ProgressView()
                 }
             }
+            .task { store.send(.onAppear) }
         }
     }
 
@@ -37,39 +39,43 @@ struct SearchView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: UNSpacing.xxxl) {
-            VStack(alignment: .leading, spacing: UNSpacing.lg) {
-                Text("인기 검색어")
-                    .font(UNFont.headingSmall())
-                    .foregroundStyle(UNColor.textPrimary)
-                    .padding(.horizontal, UNSpacing.xl)
+            if !store.trendingKeywords.isEmpty {
+                VStack(alignment: .leading, spacing: UNSpacing.lg) {
+                    Text("인기 검색어")
+                        .font(UNFont.headingSmall())
+                        .foregroundStyle(UNColor.textPrimary)
+                        .padding(.horizontal, UNSpacing.xl)
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: UNSpacing.sm) {
-                        ForEach(trendingKeywords, id: \.self) { keyword in
-                            Button {
-                                store.query = keyword
-                            } label: {
-                                Text("#\(keyword)")
-                                    .font(UNFont.bodyMedium(.medium))
-                                    .foregroundStyle(UNColor.interactive)
-                                    .padding(.horizontal, UNSpacing.lg)
-                                    .padding(.vertical, UNSpacing.sm)
-                                    .background(UNColor.bgAccent)
-                                    .clipShape(Capsule())
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: UNSpacing.sm) {
+                            ForEach(store.trendingKeywords, id: \.self) { keyword in
+                                Button {
+                                    store.query = keyword
+                                } label: {
+                                    Text("#\(keyword)")
+                                        .font(UNFont.bodyMedium(.medium))
+                                        .foregroundStyle(UNColor.interactive)
+                                        .padding(.horizontal, UNSpacing.lg)
+                                        .padding(.vertical, UNSpacing.sm)
+                                        .background(UNColor.bgAccent)
+                                        .clipShape(Capsule())
+                                }
                             }
                         }
+                        .padding(.horizontal, UNSpacing.xl)
                     }
-                    .padding(.horizontal, UNSpacing.xl)
                 }
             }
 
-            VStack(alignment: .leading, spacing: UNSpacing.lg) {
-                Text("카테고리별 탐색")
-                    .font(UNFont.headingSmall())
-                    .foregroundStyle(UNColor.textPrimary)
-                    .padding(.horizontal, UNSpacing.xl)
+            if !store.categories.isEmpty {
+                VStack(alignment: .leading, spacing: UNSpacing.lg) {
+                    Text("카테고리별 탐색")
+                        .font(UNFont.headingSmall())
+                        .foregroundStyle(UNColor.textPrimary)
+                        .padding(.horizontal, UNSpacing.xl)
 
-                CategoryGrid(categories: MockData.categories)
+                    CategoryGrid(categories: store.categories)
+                }
             }
         }
     }
@@ -85,7 +91,9 @@ struct SearchView: View {
 
             VStack(spacing: UNSpacing.md) {
                 ForEach(store.results) { app in
-                    MiniAppCardHorizontal(app: app)
+                    MiniAppCardHorizontal(app: app) { tapped in
+                        store.send(.resultTapped(tapped))
+                    }
                 }
             }
             .padding(.horizontal, UNSpacing.xl)
