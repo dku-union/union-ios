@@ -19,22 +19,28 @@ enum MockData {
 
     static let banners: [Banner] = [
         Banner(
-            id: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!,
+            id: 1, imageUrl: nil,
             title: "2026 단국대 대동제 D-7",
             subtitle: "축제 일정부터 주점 웨이팅까지 한번에",
-            gradientStartHex: "E83A33", gradientEndHex: "EF6560", emoji: "🎆"
+            emoji: "🎆",
+            gradientStartHex: "E83A33", gradientEndHex: "EF6560",
+            linkType: .none, linkTarget: nil
         ),
         Banner(
-            id: UUID(uuidString: "10000000-0000-0000-0000-000000000002")!,
+            id: 2, imageUrl: nil,
             title: "스터디 모집 시즌 오픈",
             subtitle: "기말고사 대비 스터디를 지금 만들어보세요",
-            gradientStartHex: "22C993", gradientEndHex: "36D1C4", emoji: "✏️"
+            emoji: "✏️",
+            gradientStartHex: "22C993", gradientEndHex: "36D1C4",
+            linkType: .none, linkTarget: nil
         ),
         Banner(
-            id: UUID(uuidString: "10000000-0000-0000-0000-000000000003")!,
+            id: 3, imageUrl: nil,
             title: "새로운 미니앱이 도착했어요",
             subtitle: "이번 주 인기 신규 앱을 확인해보세요",
-            gradientStartHex: "FF6060", gradientEndHex: "FF9A5C", emoji: "🚀"
+            emoji: "🚀",
+            gradientStartHex: "FF6060", gradientEndHex: "FF9A5C",
+            linkType: .none, linkTarget: nil
         ),
     ]
 

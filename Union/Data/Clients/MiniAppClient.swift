@@ -7,7 +7,12 @@ import ComposableArchitecture
 struct MiniAppClient: Sendable {
     var fetchDiscovery: @Sendable () async throws -> DiscoveryData
     var fetchBanners: @Sendable () async throws -> [Banner]
+    /// 명시적 검색 제출(키보드 Enter) — Redis 인기 검색어 집계 포함.
     var searchApps: @Sendable (_ query: String) async throws -> [MiniApp]
+    /// 타이핑 중 실시간 미리보기 — 자음/모음 단위 매칭, 집계 없음.
+    var searchAppsPreview: @Sendable (_ query: String) async throws -> [MiniApp]
+    /// 검색 결과 클릭 트래킹 (fire-and-forget). 인기 검색어 점수에 keyword + appName 반영.
+    var recordSearchClick: @Sendable (_ keyword: String?, _ appName: String) async throws -> Void
 }
 
 /// Discovery API 응답을 매핑한 도메인 데이터
@@ -43,14 +48,30 @@ extension MiniAppClient: DependencyKey {
             },
             fetchBanners: {
                 try await cache.query(key: "banners", staleTime: 600) {
-                    return MockData.banners
+                    let response: [BannerResponse] = try await apiClient.requestWithoutAuth(.banners)
+                    return response.map { $0.toBanner() }
                 }
             },
             searchApps: { query in
-                return MockData.allApps.filter {
-                    $0.name.localizedCaseInsensitiveContains(query) ||
-                    $0.description.localizedCaseInsensitiveContains(query)
-                }
+                let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return [] }
+                let response: [MiniAppLiteResponse] = try await apiClient.requestWithoutAuth(
+                    .miniAppSearch(keyword: trimmed)
+                )
+                return response.map { $0.toMiniApp() }
+            },
+            searchAppsPreview: { query in
+                let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return [] }
+                let response: [MiniAppLiteResponse] = try await apiClient.requestWithoutAuth(
+                    .miniAppSearchPreview(keyword: trimmed)
+                )
+                return response.map { $0.toMiniApp() }
+            },
+            recordSearchClick: { keyword, appName in
+                try await apiClient.sendWithoutAuth(
+                    .recordSearchClick(keyword: keyword, appName: appName)
+                )
             }
         )
     }()
@@ -73,7 +94,16 @@ extension MiniAppClient: TestDependencyKey {
             )
         },
         fetchBanners: { MockData.banners },
-        searchApps: { _ in MockData.allApps }
+        searchApps: { _ in MockData.allApps },
+        searchAppsPreview: { q in
+            let trimmed = q.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !trimmed.isEmpty else { return [] }
+            return MockData.allApps.filter {
+                $0.name.lowercased().contains(trimmed) ||
+                $0.description.lowercased().contains(trimmed)
+            }
+        },
+        recordSearchClick: { _, _ in }
     )
 }
 
