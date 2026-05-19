@@ -56,6 +56,32 @@ actor APIClient {
         return try await execute(urlRequest)
     }
 
+    /// 응답 body 가 없는(또는 무시 가능한) 공개 API 호출. 2xx 상태만 검사.
+    /// 검색 클릭 트래킹 같은 fire-and-forget 용도.
+    func sendWithoutAuth(_ endpoint: APIEndpoint) async throws {
+        let urlRequest = try endpoint.urlRequest(baseURL: baseURL)
+        NetworkLogger.logRequest(urlRequest)
+        let start = CFAbsoluteTimeGetCurrent()
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: urlRequest)
+        } catch {
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            NetworkLogger.logError(urlRequest, error: error, duration: duration)
+            throw error
+        }
+        let duration = CFAbsoluteTimeGetCurrent() - start
+        guard let http = response as? HTTPURLResponse else {
+            NetworkLogger.logError(urlRequest, error: APIError.invalidResponse, duration: duration)
+            throw APIError.invalidResponse
+        }
+        NetworkLogger.logResponse(urlRequest, status: http.statusCode, data: data, duration: duration)
+        guard (200...299).contains(http.statusCode) else {
+            throw APIError.httpError(statusCode: http.statusCode, data: data)
+        }
+    }
+
     // MARK: - Private
 
     private func resolveAccessToken() async throws -> String {
