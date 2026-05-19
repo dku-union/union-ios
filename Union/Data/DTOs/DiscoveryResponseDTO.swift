@@ -21,14 +21,18 @@ struct MiniAppLiteResponse: Codable, Sendable {
     let publisherName: String
     let category: CategoryResponse?
     let rating: Double?
+    let description: String?
+    let createdAt: Date?
 
     func toMiniApp() -> MiniApp {
         let categoryName = category?.name ?? ""
         let style = AppCategory.fallbackStyle(for: categoryName)
+        let created = createdAt ?? Date()
+        let isNew = Date().timeIntervalSince(created) < 60 * 60 * 24 * 14 // 14일 이내
         return MiniApp(
             id: id,
             name: name,
-            description: "",
+            description: description ?? "",
             publisher: publisherName,
             category: categoryName,
             iconUrl: iconUrl,
@@ -36,9 +40,9 @@ struct MiniAppLiteResponse: Codable, Sendable {
             iconColorHex: style.colorHex,
             rating: rating ?? 0.0,
             ratingCount: 0,
-            isNew: false,
+            isNew: isNew,
             isPopular: false,
-            createdAt: Date(),
+            createdAt: created,
             webUrl: nil,
             appId: appId
         )
