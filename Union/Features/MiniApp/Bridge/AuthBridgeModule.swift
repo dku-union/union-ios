@@ -18,14 +18,23 @@ struct AuthBridgeModule {
             return ["code": "auth_code_\(UUID().uuidString.prefix(8))"]
 
         case "getUserProfile":
-            let user = MockData.currentUser
-            var profile: [String: Any] = [
-                "userId": user.id.uuidString,
-                "nickname": user.nickname,
+            // 인증된 세션이 있으면 /api/v1/users/me 응답을 반환,
+            // 실패 시 Keychain 토큰 기반 익명 식별자로 폴백 (데모 호환).
+            if let me = try? await UserClient.liveValue.fetchMe() {
+                var profile: [String: Any] = [
+                    "userId": me.id.uuidString,
+                    "nickname": me.nickname,
+                ]
+                if let university = me.universityName, !university.isEmpty {
+                    profile["university"] = university
+                }
+                return profile
+            }
+            let fallbackId = KeychainStore.load(.accessToken).map { "anon_\($0.prefix(8))" } ?? "anon_unknown"
+            return [
+                "userId": fallbackId,
+                "nickname": "Guest",
             ]
-            // 권한에 따라 추가 정보 제공
-            profile["university"] = user.university
-            return profile
 
         case "getAccessToken":
             if let token = KeychainStore.load(.accessToken) {
