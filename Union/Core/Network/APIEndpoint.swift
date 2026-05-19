@@ -74,9 +74,42 @@ extension APIEndpoint {
         .init(path: "/apps/search", queryItems: [.init(name: "q", value: query)])
     }
 
+    /// 미니앱 검색 (full search) — Redis 인기 검색어 집계 포함.
+    /// 사용자가 명시적으로 검색을 제출(키보드 Enter)했을 때만 호출.
+    /// GET /mini-apps/search?keyword={keyword}&page=&size=
+    static func miniAppSearch(keyword: String, page: Int = 0, size: Int = 20) -> Self {
+        .init(path: "/mini-apps/search", queryItems: [
+            .init(name: "keyword", value: keyword),
+            .init(name: "page", value: String(page)),
+            .init(name: "size", value: String(size)),
+        ])
+    }
+
+    /// 미니앱 실시간 미리보기 — 자음/모음 단위 매칭, 인기 검색어 집계 안 함.
+    /// 타이핑 중 디바운스된 입력으로 호출하여 자동완성 UX 제공.
+    /// GET /mini-apps/search/preview?keyword={keyword}&page=&size=
+    static func miniAppSearchPreview(keyword: String, page: Int = 0, size: Int = 10) -> Self {
+        .init(path: "/mini-apps/search/preview", queryItems: [
+            .init(name: "keyword", value: keyword),
+            .init(name: "page", value: String(page)),
+            .init(name: "size", value: String(size)),
+        ])
+    }
+
+    /// 검색 결과 클릭 이벤트 — 사용자 의도(keyword)와 결과 인기도(appName)를 모두 인기 검색어 점수에 반영.
+    /// POST /mini-apps/search/click?keyword={keyword}&appName={appName}
+    static func recordSearchClick(keyword: String?, appName: String) -> Self {
+        var items: [URLQueryItem] = [.init(name: "appName", value: appName)]
+        if let keyword, !keyword.isEmpty {
+            items.append(.init(name: "keyword", value: keyword))
+        }
+        return .init(path: "/mini-apps/search/click", method: .post, queryItems: items)
+    }
+
     static var categories: Self { .init(path: "/categories") }
     static var banners: Self { .init(path: "/banners") }
     static var discovery: Self { .init(path: "/mini-apps/discovery") }
+    static var me: Self { .init(path: "/api/v1/users/me") }
 
     /// 미니앱 실행 → 사용 기록 저장 + CDN 번들 URL 반환
     /// POST /mini-apps/{id}/launch → { "bundleUrl": "https://cdn.union.app/..." }

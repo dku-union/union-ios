@@ -6,6 +6,9 @@ import ComposableArchitecture
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
 
+    /// 배너 탭 시 라우팅 대상이 미니앱이면 여기에 담아 navigationDestination push.
+    @State private var bannerDestinationApp: MiniApp?
+
     /// 첫 로드 중 (데이터가 아직 없음) 여부 → 스켈레톤 표시 조건
     private var isFirstLoading: Bool {
         store.isLoading && store.popularApps.isEmpty
@@ -37,6 +40,31 @@ struct HomeView: View {
             .navigationBarHidden(true)
             .refreshable { store.send(.refresh) }
             .task { store.send(.onAppear) }
+            .navigationDestination(item: $bannerDestinationApp) { app in
+                MiniAppWebView(miniApp: app)
+            }
+        }
+    }
+
+    // MARK: - Banner Routing
+
+    /// 배너 탭 → linkType 분기.
+    /// - .none: 무반응 (단순 노출 배너)
+    /// - .externalUrl: 시스템 브라우저로 open
+    /// - .miniApp: 현 Home에 로드된 미니앱 풀(popular/new/recommended/recent)에서 id 매치 후 push
+    private func handleBannerTap(_ banner: Banner) {
+        switch banner.linkType {
+        case .none:
+            return
+        case .externalUrl:
+            guard let target = banner.linkTarget, let url = URL(string: target) else { return }
+            UIApplication.shared.open(url)
+        case .miniApp:
+            guard let target = banner.linkTarget, let id = Int(target) else { return }
+            let pool = store.popularApps + store.newApps + store.recommendedApps + store.recentApps
+            if let app = pool.first(where: { $0.id == id }) {
+                bannerDestinationApp = app
+            }
         }
     }
 
@@ -44,7 +72,9 @@ struct HomeView: View {
 
     @ViewBuilder
     private var contentSections: some View {
-        BannerCarousel(banners: store.banners)
+        BannerCarousel(banners: store.banners) { banner in
+            handleBannerTap(banner)
+        }
 
         categorySection
 
