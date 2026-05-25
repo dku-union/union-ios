@@ -9,10 +9,16 @@ struct MainTabView: View {
     // TCA Stores
     let homeStore: StoreOf<HomeFeature>
     let searchStore: StoreOf<SearchFeature>
+    let onLogout: () -> Void
 
-    init(homeStore: StoreOf<HomeFeature>, searchStore: StoreOf<SearchFeature>) {
+    init(
+        homeStore: StoreOf<HomeFeature>,
+        searchStore: StoreOf<SearchFeature>,
+        onLogout: @escaping () -> Void
+    ) {
         self.homeStore = homeStore
         self.searchStore = searchStore
+        self.onLogout = onLogout
 
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
@@ -46,7 +52,7 @@ struct MainTabView: View {
                 }
                 .tag(Tab.notifications)
 
-            ProfileView()
+            ProfileView(onLogout: onLogout)
                 .tabItem {
                     Label(Tab.profile.title, systemImage: Tab.profile.icon)
                 }
