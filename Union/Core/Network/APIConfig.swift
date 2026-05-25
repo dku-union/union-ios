@@ -4,7 +4,7 @@ import Foundation
 
 enum APIConfig {
     #if DEBUG
-    static let baseURL = URL(string: "http://localhost:8080")!
+    static let baseURL = URL(string: "https://union-api-183092809276.asia-northeast3.run.app")!
     #else
     static let baseURL = URL(string: "https://api.union.app")!
     #endif
