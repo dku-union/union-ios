@@ -207,12 +207,29 @@ struct AppFeature {
                 return .none
 
             case .logout:
+                // 1) 토큰(Access/Refresh) 즉시 폐기 — TokenProvider 가 사용 중이던
+                //    refresh Task 가 있다면 다음 호출에서 noRefreshToken 으로 떨어진다.
                 KeychainStore.clearAll()
+
+                // 2) 사용자에 묶인 로컬 히스토리(@Shared 파일) 비우기.
+                //    fresh State 로 교체하기 전에 기존 @Shared 핸들로 비워야 디스크에도 반영된다.
+                state.home.$launchedAppIds.withLock { $0 = [] }
+
+                // 3) TCA state 전반 리셋 — 캐시된 응답/검색어/내비게이션 스택을 모두 폐기.
                 state.isLoggedIn = false
                 state.role = nil
+                state.pendingTestContext = nil
+                state.runningTest = nil
+                state.testRedeemError = nil
                 state.auth = AuthFeature.State()
+                state.home = HomeFeature.State()
+                state.search = SearchFeature.State()
                 state.publisher = PublisherFeature.State()
-                return .none
+
+                // 4) 미니앱 WebView 들이 남긴 쿠키/LocalStorage 등 영속 데이터 삭제.
+                return .run { _ in
+                    await SessionCleaner.purgeWebViewData()
+                }
 
             // PublisherView 의 로그아웃 버튼 → AppFeature.logout 으로 위임
             case .publisher(.logoutTapped):

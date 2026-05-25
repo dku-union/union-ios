@@ -19,7 +19,8 @@ struct AppRootView: View {
                 } else {
                     MainTabView(
                         homeStore: store.scope(state: \.home, action: \.home),
-                        searchStore: store.scope(state: \.search, action: \.search)
+                        searchStore: store.scope(state: \.search, action: \.search),
+                        onLogout: { store.send(.logout) }
                     )
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
