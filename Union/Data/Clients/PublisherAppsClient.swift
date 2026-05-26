@@ -31,6 +31,8 @@ struct TestBundleInfo: Equatable, Sendable, Decodable {
     let miniAppName: String
     let versionNumber: String
     let bundleUrl: String
+    /// reverse-domain appId (정식 빌드와 동일). 알림 모듈 등 appId 기반 기능을 테스트 빌드에서도 활성화.
+    let appId: String?
 }
 
 // MARK: - Errors
@@ -139,7 +141,8 @@ extension PublisherAppsClient: TestDependencyKey {
             TestBundleInfo(
                 versionId: UUID(), miniAppId: 1, miniAppName: "단짝",
                 versionNumber: "1.0.1",
-                bundleUrl: "https://cdn.example.com/sample.unionapp?Expires=0"
+                bundleUrl: "https://cdn.example.com/sample.unionapp?Expires=0",
+                appId: "com.union.danjjak"
             )
         },
         markTested: { _ in }

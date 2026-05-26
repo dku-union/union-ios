@@ -88,6 +88,10 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
     }()
     private lazy var analyticsModule = AnalyticsBridgeModule()
     private lazy var networkModule = NetworkBridgeModule()
+    private lazy var notificationModule = NotificationBridgeModule(miniAppAppId: miniApp.appId)
+
+    /// AppDelegate → DeeplinkRouter 가 broadcast 한 push 페이로드를 구독하는 Task.
+    private var notificationObserverTask: Task<Void, Never>?
 
     init(miniApp: MiniApp) {
         self.miniApp = miniApp
@@ -99,6 +103,27 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
         Task {
             await AnalyticsManager.shared.openSession(appId: analyticsAppId)
         }
+
+        // Native → SDK: 원격 푸시 수신 시 미니앱 WebView 안 SDK 에 'notification:received' 이벤트 전달.
+        let myAppId = miniApp.appId
+        notificationObserverTask = Task { @MainActor [weak self] in
+            for await note in NotificationCenter.default.notifications(
+                named: .unionBridgeNotificationReceived
+            ) {
+                guard let self else { return }
+                nonisolated(unsafe) let info = note.userInfo ?? [:]
+                // 매니페스트 appId 가 일치하는 미니앱만 자기 이벤트로 수신.
+                let payloadAppId = info["appId"] as? String
+                if let payloadAppId, let myAppId, payloadAppId != myAppId {
+                    continue
+                }
+                self.sendEvent("notification:received", data: info)
+            }
+        }
+    }
+
+    deinit {
+        notificationObserverTask?.cancel()
     }
 
     // MARK: - Analytics Lifecycle Hooks
@@ -192,6 +217,8 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
         case "storage":   return try await storageModule.handle(action: action, params: params)
         case "analytics": return try await analyticsModule.handle(action: action, params: params)
         case "network":   return try await networkModule.handle(action: action, params: params)
+        case "notification":
+            return try await notificationModule.handle(action: action, params: params)
         case "navigation":
             switch action {
             case "push":

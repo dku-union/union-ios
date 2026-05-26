@@ -20,6 +20,7 @@ struct AppRootView: View {
                     MainTabView(
                         homeStore: store.scope(state: \.home, action: \.home),
                         searchStore: store.scope(state: \.search, action: \.search),
+                        notificationsStore: store.scope(state: \.notifications, action: \.notifications),
                         onLogout: { store.send(.logout) }
                     )
                     .transition(.move(edge: .trailing).combined(with: .opacity))

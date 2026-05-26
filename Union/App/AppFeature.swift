@@ -15,6 +15,7 @@ struct AppFeature {
         var home = HomeFeature.State()
         var search = SearchFeature.State()
         var publisher = PublisherFeature.State()
+        var notifications = NotificationsFeature.State()
         /// 현재 access token 의 role claim (UI 분기용 - publisher 탭 노출 결정).
         /// 로그인 직후/세션 만료 시 갱신된다.
         var role: String? = JWTDecoder.currentRole()
@@ -46,6 +47,7 @@ struct AppFeature {
         case home(HomeFeature.Action)
         case search(SearchFeature.Action)
         case publisher(PublisherFeature.Action)
+        case notifications(NotificationsFeature.Action)
         case onAppear
         case checkAuth
         case sessionValid
@@ -68,6 +70,7 @@ struct AppFeature {
         Scope(state: \.home, action: \.home) { HomeFeature() }
         Scope(state: \.search, action: \.search) { SearchFeature() }
         Scope(state: \.publisher, action: \.publisher) { PublisherFeature() }
+        Scope(state: \.notifications, action: \.notifications) { NotificationsFeature() }
 
         Reduce { state, action in
             switch action {
@@ -83,9 +86,14 @@ struct AppFeature {
                 }
                 .cancellable(id: CancelID.sessionObserver)
 
+                // 푸시 알림 권한 요청 + APNs 등록 (앱 첫 진입 시 즉시)
+                let pushBootstrap: Effect<Action> = .run { _ in
+                    await PushNotificationCoordinator.bootstrap()
+                }
+
                 guard KeychainStore.isLoggedIn else {
                     state.isLoggedIn = false
-                    return observeEffect
+                    return .merge(observeEffect, pushBootstrap)
                 }
 
                 // 토큰 유효성 확인 (만료 임박 시 proactive refresh 수행)
@@ -98,11 +106,22 @@ struct AppFeature {
                     }
                 }
 
-                return .merge(validateEffect, observeEffect)
+                return .merge(validateEffect, observeEffect, pushBootstrap)
 
             case .sessionValid:
                 state.isLoggedIn = true
                 state.role = JWTDecoder.currentRole()
+                // 로그인 확정 직후 — 이미 받아둔 APNs 토큰이 있으면 서버에 재등록 (이전에 401이었을 가능성).
+                if let token = DevicePushTokenStore.shared.current() {
+                    return .run { _ in
+                        try? await NotificationClient.liveValue.registerDeviceToken(
+                            DeviceIdentity.deviceId,
+                            token,
+                            DeviceIdentity.appVersion,
+                            DeviceIdentity.osVersion
+                        )
+                    }
+                }
                 return .none
 
             case .sessionExpired:
@@ -180,7 +199,9 @@ struct AppFeature {
                     isPopular: false,
                     createdAt: Date(),
                     webUrl: bundle.bundleUrl,
-                    appId: nil
+                    // 정식 미니앱의 appId 를 그대로 사용 — Bridge `notification` 모듈이
+                    // subscribe/unsubscribe 등 appId 기반 기능을 테스트 빌드에서도 수행할 수 있다.
+                    appId: bundle.appId
                 )
                 state.runningTest = TestRun(miniApp: synthetic, versionNumber: bundle.versionNumber)
                 // 테스트가 실제로 시작되는 시점에 testedAt 마크 → dashboard "심사 요청" 활성화.
@@ -239,7 +260,7 @@ struct AppFeature {
             case .publisher(.qrScanned(let url)):
                 return .send(.openURL(url))
 
-            case .auth, .home, .search, .publisher:
+            case .auth, .home, .search, .publisher, .notifications:
                 return .none
             }
         }

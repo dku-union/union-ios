@@ -48,6 +48,43 @@ actor APIClient {
         }
     }
 
+    /// 인증된 fire-and-forget 호출 — 응답 body 없음(204/200).
+    /// 401 시 토큰 갱신 후 1회 재시도.
+    func send(_ endpoint: APIEndpoint) async throws {
+        let accessToken = try await resolveAccessToken()
+        do {
+            try await performSend(endpoint, accessToken: accessToken)
+        } catch APIError.httpError(statusCode: 401, _) {
+            let refreshed = try await handleUnauthorized()
+            try await performSend(endpoint, accessToken: refreshed)
+        }
+    }
+
+    private func performSend(_ endpoint: APIEndpoint, accessToken: String) async throws {
+        var urlRequest = try endpoint.urlRequest(baseURL: baseURL)
+        urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        NetworkLogger.logRequest(urlRequest)
+        let start = CFAbsoluteTimeGetCurrent()
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: urlRequest)
+        } catch {
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            NetworkLogger.logError(urlRequest, error: error, duration: duration)
+            throw error
+        }
+        let duration = CFAbsoluteTimeGetCurrent() - start
+        guard let http = response as? HTTPURLResponse else {
+            NetworkLogger.logError(urlRequest, error: APIError.invalidResponse, duration: duration)
+            throw APIError.invalidResponse
+        }
+        NetworkLogger.logResponse(urlRequest, status: http.statusCode, data: data, duration: duration)
+        guard (200...299).contains(http.statusCode) else {
+            throw APIError.httpError(statusCode: http.statusCode, data: data)
+        }
+    }
+
     // MARK: - Unauthenticated Request
 
     /// 인증이 필요 없는 공개 API 요청

@@ -9,15 +9,18 @@ struct MainTabView: View {
     // TCA Stores
     let homeStore: StoreOf<HomeFeature>
     let searchStore: StoreOf<SearchFeature>
+    let notificationsStore: StoreOf<NotificationsFeature>
     let onLogout: () -> Void
 
     init(
         homeStore: StoreOf<HomeFeature>,
         searchStore: StoreOf<SearchFeature>,
+        notificationsStore: StoreOf<NotificationsFeature>,
         onLogout: @escaping () -> Void
     ) {
         self.homeStore = homeStore
         self.searchStore = searchStore
+        self.notificationsStore = notificationsStore
         self.onLogout = onLogout
 
         let appearance = UITabBarAppearance()
@@ -46,11 +49,12 @@ struct MainTabView: View {
                 }
                 .tag(Tab.search)
 
-            NotificationsView()
+            NotificationsView(store: notificationsStore)
                 .tabItem {
                     Label(Tab.notifications.title, systemImage: Tab.notifications.icon)
                 }
                 .tag(Tab.notifications)
+                .badge(notificationsStore.unreadCount > 0 ? notificationsStore.unreadCount : 0)
 
             ProfileView(onLogout: onLogout)
                 .tabItem {
@@ -59,6 +63,11 @@ struct MainTabView: View {
                 .tag(Tab.profile)
         }
         .tint(UNColor.interactive)
+        .onReceive(NotificationCenter.default.publisher(for: .unionDeeplinkReceived)) { _ in
+            // 알림 탭/콜드런치로 들어온 deeplink → 알림 탭으로 전환.
+            // 사용자가 인박스에서 한 번 더 탭하면 NotificationsFeature 가 미니앱으로 push.
+            selectedTab = .notifications
+        }
     }
 }
 
