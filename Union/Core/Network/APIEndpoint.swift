@@ -116,4 +116,48 @@ extension APIEndpoint {
     static func launchApp(id: Int) -> Self {
         .init(path: "/mini-apps/\(id)/launch", method: .post)
     }
+
+    // MARK: - Notifications
+
+    /// APNs/FCM 토큰 등록 (upsert)
+    static func registerFcmToken(body: Data) -> Self {
+        .init(path: "/notifications/token", method: .put, body: body)
+    }
+
+    /// 알림 인박스 조회 (커서 기반)
+    static func notificationInbox(cursor: Int64?, limit: Int) -> Self {
+        var items: [URLQueryItem] = [.init(name: "limit", value: String(limit))]
+        if let cursor { items.append(.init(name: "cursor", value: String(cursor))) }
+        return .init(path: "/notifications/inbox", queryItems: items)
+    }
+
+    static func markNotificationRead(id: Int64) -> Self {
+        .init(path: "/notifications/inbox/\(id)/read", method: .post)
+    }
+
+    static var markAllNotificationsRead: Self {
+        .init(path: "/notifications/inbox/read-all", method: .post)
+    }
+
+    static var notificationUnreadCount: Self {
+        .init(path: "/notifications/unread-count")
+    }
+
+    // MARK: - MiniApp Subscriptions
+
+    static func subscribeMiniApp(appId: String) -> Self {
+        .init(path: "/api/v1/users/me/miniapps/\(appId)/subscription", method: .post)
+    }
+
+    static func updateMiniAppSubscription(appId: String, body: Data) -> Self {
+        .init(path: "/api/v1/users/me/miniapps/\(appId)/subscription", method: .patch, body: body)
+    }
+
+    static func unsubscribeMiniApp(appId: String) -> Self {
+        .init(path: "/api/v1/users/me/miniapps/\(appId)/subscription", method: .delete)
+    }
+
+    static var mySubscriptions: Self {
+        .init(path: "/api/v1/users/me/subscriptions")
+    }
 }
