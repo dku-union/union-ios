@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		BF2836232F6ED4360037E5BB /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = BF2836222F6ED4360037E5BB /* ComposableArchitecture */; };
 		BF9CA8C12F7962DA007C3992 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = BF9CA8C02F7962DA007C3992 /* ZIPFoundation */; };
+		BF189C3C2FCEC59A000C30A7 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BF189C3D2FCEC59A000C30A7 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 			files = (
 				BF2836232F6ED4360037E5BB /* ComposableArchitecture in Frameworks */,
 				BF9CA8C12F7962DA007C3992 /* ZIPFoundation in Frameworks */,
+				BF189C3C2FCEC59A000C30A7 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +89,7 @@
 			packageProductDependencies = (
 				BF2836222F6ED4360037E5BB /* ComposableArchitecture */,
 				BF9CA8C02F7962DA007C3992 /* ZIPFoundation */,
+				BF189C3D2FCEC59A000C30A7 /* FirebaseMessaging */,
 			);
 			productName = Union;
 			productReference = BF7E03B82F5C07870058D6D7 /* Union.app */;
@@ -119,6 +122,7 @@
 			packageReferences = (
 				BF2836212F6ED4360037E5BB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				BF9CA8BF2F7962D9007C3992 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				BF189C3B2FCEC59A000C30A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BF7E03B92F5C07870058D6D7 /* Products */;
@@ -368,6 +372,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		BF189C3B2FCEC59A000C30A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.14.0;
+			};
+		};
 		BF2836212F6ED4360037E5BB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
@@ -396,6 +408,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BF9CA8BF2F7962D9007C3992 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
+		};
+		BF189C3D2FCEC59A000C30A7 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF189C3B2FCEC59A000C30A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
