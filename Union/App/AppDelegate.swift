@@ -1,12 +1,23 @@
 import UIKit
 import UserNotifications
+import FirebaseCore
+import FirebaseMessaging
 
-class AppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotificationCenterDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotificationCenterDelegate, @preconcurrency MessagingDelegate {
 
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // Firebase 초기화 — GoogleService-Info.plist 가 번들에 있을 때만.
+        // 누락 시 configure 가 크래시하므로 가드하고, 푸시만 비활성화한다.
+        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
+            FirebaseApp.configure()
+            Messaging.messaging().delegate = self
+        } else {
+            print("[Union] GoogleService-Info.plist 누락 — Firebase 미초기화, 원격 푸시 비활성")
+        }
+
         // 포그라운드/탭 알림 처리 위임
         UNUserNotificationCenter.current().delegate = self
 
@@ -23,11 +34,47 @@ class AppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotifi
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("[Union] APNs token: \(token)")
-        DevicePushTokenStore.shared.update(token)
+        // FCM 은 APNs 위에서 동작 — raw APNs 토큰을 Firebase 에 전달한다.
+        // FCM 등록 토큰은 messaging(_:didReceiveRegistrationToken:) 로 비동기 전달되지만,
+        // 그 콜백이 apnsToken 부착 전에 fire 될 수 있어 여기서 명시적으로도 fetch 한다.
+        guard FirebaseApp.app() != nil else { return }
+        Messaging.messaging().apnsToken = deviceToken
+        Messaging.messaging().token { [weak self] token, error in
+            if let error {
+                print("[Union] FCM 토큰 fetch 실패: \(error.localizedDescription)")
+                return
+            }
+            if let token { self?.registerFcmTokenToServer(token) }
+        }
+    }
 
-        // Spring 서버에 등록 (fire-and-forget). 로그인 전이면 401 → 다음 로그인 후 재시도.
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("[Union] APNs registration failed: \(error.localizedDescription)")
+    }
+
+    // MARK: - FCM Registration Token
+
+    /// Firebase 가 FCM 등록 토큰을 발급/갱신할 때 호출된다.
+    func messaging(
+        _ messaging: Messaging,
+        didReceiveRegistrationToken fcmToken: String?
+    ) {
+        guard let fcmToken else {
+            print("[Union] FCM 등록 토큰 nil — 등록 스킵")
+            return
+        }
+        registerFcmTokenToServer(fcmToken)
+    }
+
+    /// FCM 토큰을 메모리 캐시에 저장하고 Spring 서버에 등록한다 (fire-and-forget).
+    /// delegate 콜백과 명시적 token fetch 양쪽에서 호출 — 동일 토큰이면 백엔드 upsert 로 idempotent.
+    /// 로그인 전이면 401 → 로그인 성공 시 AppFeature 가 재등록한다.
+    private func registerFcmTokenToServer(_ token: String) {
+        print("[Union] FCM token: \(token)")
+        DevicePushTokenStore.shared.update(token)
         Task.detached {
             do {
                 try await NotificationClient.liveValue.registerDeviceToken(
@@ -41,13 +88,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotifi
                 print("[Union] FCM 토큰 서버 등록 실패: \(error.localizedDescription)")
             }
         }
-    }
-
-    func application(
-        _ application: UIApplication,
-        didFailToRegisterForRemoteNotificationsWithError error: Error
-    ) {
-        print("[Union] APNs registration failed: \(error.localizedDescription)")
     }
 
     // MARK: - Push Notifications: Reception

@@ -3,8 +3,8 @@ import UIKit
 import UserNotifications
 
 /// 앱 진입 시 푸시 권한을 요청하고 APNs 등록을 트리거한다.
-/// 토큰 자체는 AppDelegate.didRegisterForRemoteNotificationsWithDeviceToken 에서 수신해
-/// `NotificationClient.registerDeviceToken` 로 서버에 PUT.
+/// APNs 토큰은 AppDelegate.didRegisterForRemoteNotificationsWithDeviceToken 에서 수신해 Firebase 에 전달하고,
+/// 발급된 FCM 토큰을 messaging(_:didReceiveRegistrationToken:) 에서 `NotificationClient.registerDeviceToken` 로 서버에 PUT.
 @MainActor
 enum PushNotificationCoordinator {
 

@@ -111,18 +111,8 @@ struct AppFeature {
             case .sessionValid:
                 state.isLoggedIn = true
                 state.role = JWTDecoder.currentRole()
-                // 로그인 확정 직후 — 이미 받아둔 APNs 토큰이 있으면 서버에 재등록 (이전에 401이었을 가능성).
-                if let token = DevicePushTokenStore.shared.current() {
-                    return .run { _ in
-                        try? await NotificationClient.liveValue.registerDeviceToken(
-                            DeviceIdentity.deviceId,
-                            token,
-                            DeviceIdentity.appVersion,
-                            DeviceIdentity.osVersion
-                        )
-                    }
-                }
-                return .none
+                // 세션 확정 직후 — 이미 받아둔 FCM 토큰이 있으면 서버에 재등록 (이전에 401이었을 가능성).
+                return reRegisterPushToken()
 
             case .sessionExpired:
                 KeychainStore.clearAll()
@@ -135,13 +125,14 @@ struct AppFeature {
                 state.isLoggedIn = true
                 state.role = JWTDecoder.currentRole()
                 state.auth.path.removeAll()
-                return .none
+                // 로그인 직후 — 미로그인 상태에서 401 로 실패했던 FCM 토큰 등록을 재시도.
+                return reRegisterPushToken()
 
             case .auth(.path(.element(_, action: .signUpCode(.signUpCompleted)))):
                 state.isLoggedIn = true
                 state.role = JWTDecoder.currentRole()
                 state.auth.path.removeAll()
-                return .none
+                return reRegisterPushToken()
 
             // Publisher 로그인 성공 → isLoggedIn 처리 후, 스킴으로 들어온 컨텍스트가 있으면 자동 redeem.
             case .auth(.path(.element(_, action: .publisherLoginCode(.loginSucceeded)))):
@@ -149,9 +140,9 @@ struct AppFeature {
                 state.role = JWTDecoder.currentRole()
                 state.auth.path.removeAll()
                 if state.pendingTestContext?.isRedeemable == true {
-                    return .send(.redeemPendingTest)
+                    return .merge(reRegisterPushToken(), .send(.redeemPendingTest))
                 }
-                return .none
+                return reRegisterPushToken()
 
             case .openURL(let url):
                 guard let context = parsePublisherTestURL(url) else {
@@ -263,6 +254,22 @@ struct AppFeature {
             case .auth, .home, .search, .publisher, .notifications:
                 return .none
             }
+        }
+    }
+
+    // MARK: - Push Token Re-registration
+
+    /// 캐시된 푸시 토큰(FCM)을 서버에 재등록하는 Effect.
+    /// 로그인 전 401 로 실패했던 토큰을 로그인/세션 확정 시점에 다시 등록한다.
+    private func reRegisterPushToken() -> Effect<Action> {
+        guard let token = DevicePushTokenStore.shared.current() else { return .none }
+        return .run { _ in
+            try? await NotificationClient.liveValue.registerDeviceToken(
+                DeviceIdentity.deviceId,
+                token,
+                DeviceIdentity.appVersion,
+                DeviceIdentity.osVersion
+            )
         }
     }
 
