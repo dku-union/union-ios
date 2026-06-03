@@ -17,3 +17,6 @@ Packages/
 
 # Claude
 .claude/
+
+# Firebase — 환경별로 제공, 커밋하지 않음 (Firebase 콘솔에서 다운로드)
+GoogleService-Info.plist
