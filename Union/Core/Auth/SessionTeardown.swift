@@ -11,18 +11,18 @@ import Foundation
 enum SessionTeardown {
 
     /// 1) 현재 기기 FCM 토큰 해제(DELETE /notifications/token)
-    /// 2) 서버 세션 로그아웃(POST /api/v1/auth/logout — refresh 토큰 전체 무효화)
-    static func purgeServerSession(accessToken: String?, fcmToken: String?, deviceId: String) async {
+    /// 2) 서버 세션 로그아웃(POST /api/v1/auth/logout — 이 기기의 refresh 토큰만 무효화)
+    static func purgeServerSession(accessToken: String?, refreshToken: String?, fcmToken: String?, deviceId: String) async {
         guard let accessToken else { return }
 
-        // 로그아웃은 keychain 을 먼저 비운다. 이 시점에 access token 이 다시 존재한다면
-        // 그 사이 재로그인이 일어난 것이므로 서버 정리를 건너뛴다 — 늦게 도착한 logout/토큰삭제가
-        // 새 세션의 refresh·FCM 토큰을 무효화하는 race 를 방지한다.
-        if KeychainStore.load(.accessToken) != nil { return }
+        // 로그아웃은 keychain 을 먼저 비운다. 이 시점에 access token 이 다시 존재한다면 재로그인이
+        // 일어난 것. FCM 등록 토큰은 로그인 상태와 무관하게 기기마다 안정적이라 재로그인 시 같은 값으로
+        // 재등록되므로, 늦게 도착한 DELETE 가 그 토큰을 지우지 않도록 FCM 삭제만 건너뛴다.
+        // (서버 로그아웃은 이 세션의 refresh 토큰만 무효화하므로 재로그인 세션에 무해 → 항상 수행)
+        let reLoggedIn = KeychainStore.load(.accessToken) != nil
 
-        // 두 호출은 서로 독립적이므로 병렬 수행한다 — 한쪽이 지연돼도 다른 쪽(특히 세션 무효화)을 막지 않는다.
         await withTaskGroup(of: Void.self) { group in
-            if let fcmToken {
+            if let fcmToken, !reLoggedIn {
                 group.addTask {
                     let body = try? JSONSerialization.data(
                         withJSONObject: ["token": fcmToken, "deviceId": deviceId]
@@ -31,7 +31,10 @@ enum SessionTeardown {
                 }
             }
             group.addTask {
-                await send(method: "POST", path: "/api/v1/auth/logout", accessToken: accessToken, body: nil)
+                let body: Data? = refreshToken.flatMap {
+                    try? JSONSerialization.data(withJSONObject: ["refreshToken": $0])
+                }
+                await send(method: "POST", path: "/api/v1/auth/logout", accessToken: accessToken, body: body)
             }
         }
     }

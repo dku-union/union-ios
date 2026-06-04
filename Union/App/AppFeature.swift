@@ -281,6 +281,7 @@ struct AppFeature {
                 // 0) keychain 을 비우기 전에 서버 teardown 에 쓸 자격증명 스냅샷.
                 //    (clearAll 이후엔 Bearer 토큰을 못 읽으므로 미리 캡처)
                 let teardownAccessToken = KeychainStore.load(.accessToken)
+                let teardownRefreshToken = KeychainStore.load(.refreshToken)
                 let teardownFcmToken = DevicePushTokenStore.shared.current()
                 let teardownDeviceId = DeviceIdentity.deviceId
 
@@ -311,6 +312,7 @@ struct AppFeature {
                     KeychainStore.clearAll()
                     await SessionTeardown.purgeServerSession(
                         accessToken: teardownAccessToken,
+                        refreshToken: teardownRefreshToken,
                         fcmToken: teardownFcmToken,
                         deviceId: teardownDeviceId
                     )
