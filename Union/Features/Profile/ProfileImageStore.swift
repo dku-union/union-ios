@@ -9,7 +9,10 @@ import UIKit
 ///
 /// `NSCache` 라 스레드 안전하며 메모리 압박 시 자동 비워진다. 앱 재시작 시에는
 /// 비어 있고, 그때는 정상적으로 URL 에서 내려받는다.
-final class ProfileImageStore {
+///
+/// 저장소는 불변 `let cache`(`NSCache`, 자체 스레드 안전)만 가지므로 동시성 안전 —
+/// strict concurrency 의 `shared` 싱글톤 요구를 충족하기 위해 `@unchecked Sendable` 로 단언한다.
+final class ProfileImageStore: @unchecked Sendable {
     static let shared = ProfileImageStore()
     private let cache = NSCache<NSString, UIImage>()
     private init() {}
