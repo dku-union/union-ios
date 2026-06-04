@@ -116,8 +116,11 @@ actor TokenProvider {
                 let response = try await self.performRefreshRequest(refreshToken: refreshToken)
 
                 // 네트워크 왕복 동안 로그아웃되었으면 새 토큰을 저장하지 않는다(세션 부활 방지).
+                // 재인증 에러(refreshTokenExpired)로 던지면 catch 가 broadcastSessionExpired 를
+                // 호출해 그 사이 재로그인한 새 세션까지 만료시키므로, "취소/대체됨" 의미의
+                // CancellationError 로 던져 세션 만료 브로드캐스트를 우회한다.
                 guard generation == self.invalidationGeneration else {
-                    throw TokenError.refreshTokenExpired
+                    throw CancellationError()
                 }
 
                 KeychainStore.save(response.accessToken, for: .accessToken)
