@@ -6,7 +6,7 @@ import ComposableArchitecture
 @Reducer
 struct AppFeature {
 
-    private enum CancelID { case sessionObserver }
+    private enum CancelID { case sessionObserver, deeplinkObserver }
 
     @ObservableState
     struct State {
@@ -27,6 +27,9 @@ struct AppFeature {
         var runningTest: TestRun?
         var testRedeemError: String?
 
+        /// 푸시 MINIAPP 딥링크로 열리는 미니앱 (fullScreenCover). 탭/화면 위에 전체화면으로 뜬다.
+        var pendingDeeplinkApp: DeeplinkRun?
+
         /// JWT의 role 이 ROLE_PUBLISHER 또는 ROLE_ADMIN 인지 — publisher 전용 탭 노출 여부.
         var isPublisher: Bool {
             switch role {
@@ -40,6 +43,13 @@ struct AppFeature {
     struct TestRun: Equatable {
         let miniApp: MiniApp
         let versionNumber: String
+    }
+
+    /// 푸시 MINIAPP 딥링크 실행 — 합성 MiniApp + 미니앱 내부 초기 경로(path).
+    struct DeeplinkRun: Equatable, Identifiable {
+        let miniApp: MiniApp
+        let initialPath: String?
+        var id: Int { miniApp.id }
     }
 
     enum Action {
@@ -61,6 +71,9 @@ struct AppFeature {
         case testRedeemFailed(String)
         case dismissRunningTest
         case dismissTestRedeemError
+        /// 푸시 MINIAPP 딥링크 수신 → 해당 미니앱을 fullScreenCover 로 연다.
+        case openMiniAppFromPush(DeeplinkPayload)
+        case dismissDeeplinkApp
     }
 
     @Dependency(\.publisherAppsClient) var publisherAppsClient
@@ -91,9 +104,25 @@ struct AppFeature {
                     await PushNotificationCoordinator.bootstrap()
                 }
 
+                // 푸시 MINIAPP 딥링크 구독 — 앱 실행 중 탭으로 도착하는 deeplink 를 받는다.
+                let deeplinkObserve: Effect<Action> = .run { send in
+                    for await note in NotificationCenter.default.notifications(named: .unionOpenMiniApp) {
+                        guard let payload = note.userInfo?["payload"] as? DeeplinkPayload else { continue }
+                        await send(.openMiniAppFromPush(payload))
+                    }
+                }
+                .cancellable(id: CancelID.deeplinkObserver)
+
+                // 콜드런치(앱 종료 상태에서 푸시 탭)로 구독 전에 도착한 deeplink 회수.
+                let consumeColdLaunch: Effect<Action> = .run { send in
+                    if let payload = await DeeplinkRouter.shared.consumePendingMiniApp() {
+                        await send(.openMiniAppFromPush(payload))
+                    }
+                }
+
                 guard KeychainStore.isLoggedIn else {
                     state.isLoggedIn = false
-                    return .merge(observeEffect, pushBootstrap)
+                    return .merge(observeEffect, pushBootstrap, deeplinkObserve, consumeColdLaunch)
                 }
 
                 // 토큰 유효성 확인 (만료 임박 시 proactive refresh 수행)
@@ -106,7 +135,7 @@ struct AppFeature {
                     }
                 }
 
-                return .merge(validateEffect, observeEffect, pushBootstrap)
+                return .merge(validateEffect, observeEffect, pushBootstrap, deeplinkObserve, consumeColdLaunch)
 
             case .sessionValid:
                 state.isLoggedIn = true
@@ -214,14 +243,51 @@ struct AppFeature {
                 state.testRedeemError = nil
                 return .none
 
+            case .openMiniAppFromPush(let payload):
+                // 로그인 상태에서, 미니앱 DB id 가 동봉됐을 때만 연다.
+                guard state.isLoggedIn, let miniAppId = payload.miniAppId else { return .none }
+                // 이미 같은 미니앱이 열려 있으면 중복 표시 방지.
+                guard state.pendingDeeplinkApp?.miniApp.id != miniAppId else { return .none }
+                let synthetic = MiniApp(
+                    id: miniAppId,
+                    name: "",
+                    description: "",
+                    publisher: "",
+                    category: "push",
+                    iconUrl: nil,
+                    iconEmoji: nil,
+                    iconColorHex: nil,
+                    rating: 0,
+                    ratingCount: 0,
+                    isNew: false,
+                    isPopular: false,
+                    createdAt: Date(),
+                    // webUrl 은 비움 — MiniAppWebView 가 launch API(/mini-apps/{miniAppId}/launch)로 bundleUrl 을 가져온다.
+                    webUrl: nil,
+                    appId: payload.appId
+                )
+                state.pendingDeeplinkApp = DeeplinkRun(miniApp: synthetic, initialPath: payload.path)
+                return .none
+
+            case .dismissDeeplinkApp:
+                state.pendingDeeplinkApp = nil
+                return .none
+
             case .checkAuth:
                 state.isLoggedIn = KeychainStore.isLoggedIn
                 return .none
 
             case .logout:
-                // 1) 토큰(Access/Refresh) 즉시 폐기 — TokenProvider 가 사용 중이던
-                //    refresh Task 가 있다면 다음 호출에서 noRefreshToken 으로 떨어진다.
-                KeychainStore.clearAll()
+                // 0) keychain 을 비우기 전에 서버 teardown 에 쓸 자격증명 스냅샷.
+                //    (clearAll 이후엔 Bearer 토큰을 못 읽으므로 미리 캡처)
+                let teardownAccessToken = KeychainStore.load(.accessToken)
+                let teardownRefreshToken = KeychainStore.load(.refreshToken)
+                let teardownFcmToken = DevicePushTokenStore.shared.current()
+                let teardownDeviceId = DeviceIdentity.deviceId
+
+                // 1) 토큰 폐기/서버 정리는 아래 effect 에서 invalidate → clearAll 순으로 수행한다.
+                //    (TokenProvider.invalidate 가 진행 중 refresh 를 취소·무효화한 뒤 비워야
+                //     in-flight refresh 로 세션이 되살아나지 않는다)
 
                 // 2) 사용자에 묶인 로컬 히스토리(@Shared 파일) 비우기.
                 //    fresh State 로 교체하기 전에 기존 @Shared 핸들로 비워야 디스크에도 반영된다.
@@ -233,13 +299,23 @@ struct AppFeature {
                 state.pendingTestContext = nil
                 state.runningTest = nil
                 state.testRedeemError = nil
+                state.pendingDeeplinkApp = nil
                 state.auth = AuthFeature.State()
                 state.home = HomeFeature.State()
                 state.search = SearchFeature.State()
                 state.publisher = PublisherFeature.State()
 
-                // 4) 미니앱 WebView 들이 남긴 쿠키/LocalStorage 등 영속 데이터 삭제.
+                // 4) 진행 중 refresh 무효화 → 로컬 토큰 폐기 → 서버 세션/FCM 정리(best-effort)
+                //    → 미니앱 WebView 영속 데이터 삭제. 모두 best-effort 이며 실패해도 로그아웃 완료.
                 return .run { _ in
+                    await TokenProvider.shared.invalidate()
+                    KeychainStore.clearAll()
+                    await SessionTeardown.purgeServerSession(
+                        accessToken: teardownAccessToken,
+                        refreshToken: teardownRefreshToken,
+                        fcmToken: teardownFcmToken,
+                        deviceId: teardownDeviceId
+                    )
                     await SessionCleaner.purgeWebViewData()
                 }
 

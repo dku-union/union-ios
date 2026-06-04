@@ -11,22 +11,27 @@ private struct LaunchResponse: Decodable {
 
 struct MiniAppWebView: View {
     let miniApp: MiniApp
+    /// 푸시 딥링크 등으로 지정된 미니앱 내부 초기 경로. nil/"/" 면 루트에서 시작.
+    let initialPath: String?
 
     @Environment(\.dismiss) private var dismiss
     @State private var isLoading = true
     @State private var navTitle: String
     @State private var loadError: String?
     @State private var canGoBack = false
+    @State private var showReportSheet = false
 
     @State private var resolvedLocal: MiniAppLoadResult?
     @State private var resolvedRemote: URL?
 
-    /// launch API 호출이 완료되었는지 여부.
-    /// true + resolvedLocal/Remote 모두 nil = 배포된 버전 없음
-    @State private var launchResolved = false
+    /// launch 가 끝났는데 유효한 URL 이 없는 경우(= 배포된 버전 없음)에만 true.
+    /// 로컬 .unionapp 다운로드/압축해제 중에는 false 로 유지되어 로딩 화면이 표시된다.
+    /// (다운로드 완료 전에 placeholder 를 띄우면 정상 앱도 1~2초간 "배포되지 않은 앱"으로 잘못 보임)
+    @State private var noDeployment = false
 
-    init(miniApp: MiniApp) {
+    init(miniApp: MiniApp, initialPath: String? = nil) {
         self.miniApp = miniApp
+        self.initialPath = initialPath
         self._navTitle = State(initialValue: miniApp.name)
     }
 
@@ -37,6 +42,7 @@ struct MiniAppWebView: View {
                 MiniAppNavigationControllerRepresentable(
                     miniApp: miniApp,
                     loadResult: loadResult,
+                    initialRoute: initialPath,
                     isLoading: $isLoading,
                     navTitle: $navTitle,
                     loadError: $loadError,
@@ -58,18 +64,21 @@ struct MiniAppWebView: View {
                 )
                 .ignoresSafeArea(edges: .bottom)
 
-            } else if launchResolved {
-                // launch API 완료 후에도 URL 없음 = 배포된 버전 없음
+            } else if noDeployment {
+                // launch 결과 유효한 URL 이 없을 때만 (다운로드 중에는 진입하지 않음)
                 noUrlView
+            } else {
+                // URL 해석 / 로컬 패키지 다운로드 중
+                loadingView
             }
-            // else: URL 획득 중 → 아무것도 표시하지 않음 (네비게이션 바 로딩 인디케이터로 표시)
 
             if let loadError { errorOverlay(message: loadError) }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(navTitle)
         .navigationBarBackButtonHidden(true)
-        .toolbarBackground(.visible, for: .navigationBar)
+        // 흰 배경 + 하단 라인 없음은 전역 UINavigationBarAppearance(MainTabView) 를 따른다.
+        // .toolbarBackground(.visible) 를 쓰면 SwiftUI 가 자체 appearance 로 프록시를 무시하므로 사용하지 않는다.
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -85,12 +94,28 @@ struct MiniAppWebView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if isLoading && !launchResolved {
-                    ProgressView().scaleEffect(0.8)
+                Menu {
+                    Button(role: .destructive) {
+                        showReportSheet = true
+                    } label: {
+                        Label("신고하기", systemImage: "exclamationmark.bubble")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .fontWeight(.medium)
                 }
             }
         }
+        .sheet(isPresented: $showReportSheet) {
+            ReportSheet(
+                miniAppId: miniApp.id,
+                miniAppName: miniApp.name.isEmpty ? navTitle : miniApp.name
+            )
+        }
         .task { await resolveURL() }
+        // 진입 경로(카드 push / 딥링크·테스트 fullScreenCover)에 따라 바깥 NavigationStack 의
+        // tint 상속이 달라지므로, 여기서 직접 고정해 어디서 열려도 동일한 색을 보장한다.
+        .tint(UNColor.interactive)
     }
 
     // MARK: - URL 해석
@@ -108,10 +133,10 @@ struct MiniAppWebView: View {
             urlString = await fetchLaunchUrl()
         }
 
-        launchResolved = true
-
         guard let urlString, let url = URL(string: urlString) else {
             isLoading = false
+            // 오류가 아니라 정말로 배포 URL 이 없을 때만 placeholder 표시.
+            if loadError == nil { noDeployment = true }
             return
         }
 
@@ -124,9 +149,20 @@ struct MiniAppWebView: View {
                 isLoading = false
             }
         } else {
-            // 원격 HTTP(S) URL 직접 로드
-            resolvedRemote = url
+            // 원격 HTTP(S) URL 직접 로드 — 초기 경로가 있으면 ?__route= 로 주입.
+            resolvedRemote = Self.applyRoute(to: url, route: initialPath)
         }
+    }
+
+    /// 원격 진입 URL 에 미니앱 내부 경로를 ?__route= 쿼리로 부착한다.
+    /// 로컬 .unionapp 의 `MiniAppSchemeHandler.entryURL(route:)` 과 동일한 계약 — 미니앱 SDK 가 동일하게 읽는다.
+    private static func applyRoute(to url: URL, route: String?) -> URL {
+        guard let route, !route.isEmpty, route != "/" else { return url }
+        guard var comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        var items = comps.queryItems ?? []
+        items.append(URLQueryItem(name: "__route", value: route))
+        comps.queryItems = items
+        return comps.url ?? url
     }
 
     /// POST /mini-apps/{id}/launch → bundleUrl 반환
@@ -155,6 +191,19 @@ struct MiniAppWebView: View {
         .background(.background)
     }
 
+    /// URL 해석 / 로컬 패키지 다운로드 중 표시되는 로딩 화면.
+    /// 웹뷰 배경(보통 흰색)과 자연스럽게 이어지도록 흰 배경 사용.
+    private var loadingView: some View {
+        VStack(spacing: UNSpacing.lg) {
+            UNCircularLoader(size: 44, lineWidth: 3, color: UNColor.interactive)
+            Text(navTitle)
+                .font(UNFont.bodyMedium(.medium))
+                .foregroundStyle(UNColor.textSecondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(UNColor.bgSecondary)
+    }
+
     private var noUrlView: some View {
         VStack(spacing: 16) {
             Image(systemName: "app.dashed").font(.system(size: 40)).foregroundStyle(.secondary)
@@ -162,6 +211,7 @@ struct MiniAppWebView: View {
             Text("퍼블리셔가 앱을 아직 배포하지 않았습니다").font(UNFont.captionLarge()).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(UNColor.bgSecondary)
     }
 }
 
@@ -170,6 +220,7 @@ struct MiniAppWebView: View {
 struct MiniAppNavigationControllerRepresentable: UIViewControllerRepresentable {
     let miniApp: MiniApp
     let loadResult: MiniAppLoadResult
+    var initialRoute: String? = nil
     @Binding var isLoading: Bool
     @Binding var navTitle: String
     @Binding var loadError: String?
@@ -181,7 +232,7 @@ struct MiniAppNavigationControllerRepresentable: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> MiniAppNavigationController {
-        let navController = MiniAppNavigationController(miniApp: miniApp, loadResult: loadResult)
+        let navController = MiniAppNavigationController(miniApp: miniApp, loadResult: loadResult, initialRoute: initialRoute)
 
         navController.onTitleChange = { [weak coordinator = context.coordinator] title in
             coordinator?.parent.navTitle = title

@@ -42,5 +42,9 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<!-- iOS 26 Liquid Glass 디자인 opt-out (시스템 탭바/내비바/시트의 글래스 효과 비활성화).
+	     Apple 이 임시 호환 플래그로 제공하며 Xcode 27 에서 제거 예정 → 추후 Liquid Glass 정식 대응 필요. -->
+	<key>UIDesignRequiresCompatibility</key>
+	<true/>
 </dict>
 </plist>

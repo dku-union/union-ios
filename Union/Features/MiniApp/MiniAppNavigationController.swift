@@ -27,7 +27,7 @@ final class MiniAppNavigationController: UINavigationController,
     /// 외부에서 설정하는 WKNavigationDelegate (Coordinator가 담당)
     weak var webNavigationDelegate: WKNavigationDelegate?
 
-    init(miniApp: MiniApp, loadResult: MiniAppLoadResult) {
+    init(miniApp: MiniApp, loadResult: MiniAppLoadResult, initialRoute: String? = nil) {
         self.miniApp = miniApp
         self.loadResult = loadResult
         self.pool = MiniAppWebViewPool(miniApp: miniApp, loadResult: loadResult)
@@ -37,8 +37,9 @@ final class MiniAppNavigationController: UINavigationController,
         // 풀 워밍업
         pool.warmUp()
 
-        // 초기 페이지 (route = "/") 생성
-        let initialPage = createPage(route: "/", title: miniApp.name)
+        // 초기 페이지 — 딥링크 초기 경로가 있으면 그 route 로, 없으면 루트("/").
+        let route = (initialRoute?.isEmpty == false) ? initialRoute! : "/"
+        let initialPage = createPage(route: route, title: miniApp.name)
         setViewControllers([initialPage], animated: false)
 
         // 네비게이션 바 숨김 (SwiftUI에서 관리)
@@ -46,7 +47,7 @@ final class MiniAppNavigationController: UINavigationController,
         delegate = self
 
         // 초기 페이지 로드
-        let url = routeURL(for: "/")
+        let url = routeURL(for: route)
         initialPage.webView.load(URLRequest(url: url))
     }
 

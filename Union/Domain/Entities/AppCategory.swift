@@ -21,4 +21,17 @@ struct AppCategory: Identifiable, Hashable, Codable, Sendable {
         default:         return ("📱", "8B8B8B")
         }
     }
+
+    /// 카테고리 코드(MEAL 등)를 한글 표시명으로 변환. 미니앱 카드 카테고리 태그에 사용.
+    static func localizedName(for name: String) -> String {
+        switch name.uppercased() {
+        case "FESTIVAL": return "축제"
+        case "MEAL":     return "학식"
+        case "STUDY":    return "스터디"
+        case "MARKET":   return "거래"
+        case "SOCIAL":   return "소통"
+        case "ETC":      return "기타"
+        default:         return name
+        }
+    }
 }

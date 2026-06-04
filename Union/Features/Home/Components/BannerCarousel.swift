@@ -23,7 +23,7 @@ struct BannerCarousel: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .frame(height: 170)
 
-            // Glass page indicator
+            // Page indicator
             if banners.count > 1 {
                 HStack(spacing: 6) {
                     ForEach(0..<banners.count, id: \.self) { index in
@@ -34,9 +34,6 @@ struct BannerCarousel: View {
                     }
                 }
                 .padding(.vertical, UNSpacing.xs)
-                .padding(.horizontal, UNSpacing.lg)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
             }
         }
     }
@@ -55,7 +52,6 @@ private struct BannerCard: View {
                 gradientCard
             }
         }
-        .padding(.horizontal, UNSpacing.xl)
     }
 
     // MARK: 이미지 카드 — imageUrl 우선
@@ -84,7 +80,7 @@ private struct BannerCard: View {
                 overlayText(title: title, subtitle: banner.subtitle)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: UNRadius.xxl, style: .continuous))
+        .clipped()
     }
 
     private func overlayText(title: String, subtitle: String?) -> some View {
@@ -118,7 +114,7 @@ private struct BannerCard: View {
 
     private var gradientCard: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: UNRadius.xxl, style: .continuous)
+            Rectangle()
                 .fill(gradientFill)
 
             GeometryReader { geo in
@@ -167,7 +163,7 @@ private struct BannerCard: View {
     }
 
     private var gradientPlaceholder: some View {
-        RoundedRectangle(cornerRadius: UNRadius.xxl, style: .continuous)
+        Rectangle()
             .fill(gradientFill)
             .overlay(ProgressView().tint(.white))
     }
