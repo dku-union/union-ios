@@ -15,6 +15,10 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>미니앱에서 QR 코드 스캔 등 카메라 기능을 사용할 때 필요해요.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>미니앱에서 내 주변 정보 등 위치 기반 기능을 사용할 때 필요해요.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSExceptionDomains</key>

@@ -19,4 +19,25 @@ extension SharedKey where Self == FileStorageKey<[Int]> {
             URL.documentsDirectory.appendingPathComponent("union.launchedApps.json")
         )
     }
+
+    /// 동의 얼럿을 한 번이라도 완료한 미니앱 id.
+    /// 재접속 시 동의 모달을 다시 띄우지 않기 위한 fast-path (launch 기록과 독립적으로 관리).
+    static var consentedAppIds: Self {
+        .fileStorage(
+            URL.documentsDirectory.appendingPathComponent("union.consentedApps.json")
+        )
+    }
+}
+
+// MARK: - 미니앱 권한 결정
+
+extension SharedKey where Self == FileStorageKey<[String: [String: Bool]]> {
+    /// 미니앱별 권한 결정 로컬 캐시.
+    /// 외부 키 = `String(miniApp.id)`, 내부 = scope rawValue → granted.
+    /// 오프라인/세션 간 권한 집행의 진실원이며, 백엔드는 동기화 소스다.
+    static var localPermissionDecisions: Self {
+        .fileStorage(
+            URL.documentsDirectory.appendingPathComponent("union.miniAppPermissions.json")
+        )
+    }
 }

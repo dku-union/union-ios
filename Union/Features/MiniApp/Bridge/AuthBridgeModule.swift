@@ -25,6 +25,11 @@ struct AuthBridgeModule {
                     "userId": me.id.uuidString,
                     "nickname": me.nickname,
                 ]
+                // email/university 는 BridgeHandler 가 user.email / user.university 권한에 따라
+                // 응답에서 필드 단위로 제거한다(미허용 시 stripping).
+                if !me.email.isEmpty {
+                    profile["email"] = me.email
+                }
                 if let university = me.universityName, !university.isEmpty {
                     profile["university"] = university
                 }
