@@ -73,16 +73,7 @@ struct SearchView: View {
                 }
             }
 
-            if !store.categories.isEmpty {
-                VStack(alignment: .leading, spacing: UNSpacing.lg) {
-                    Text("카테고리별 탐색")
-                        .font(UNFont.headingSmall())
-                        .foregroundStyle(UNColor.textPrimary)
-                        .padding(.horizontal, UNSpacing.xl)
-
-                    CategoryGrid(categories: store.categories)
-                }
-            }
+            // "카테고리별 탐색"은 카테고리 기능(코드↔표시명 매핑/탐색) 준비 전까지 임시 숨김 — 홈과 동일.
         }
     }
 
