@@ -247,8 +247,11 @@ struct AppFeature {
                 state.search = SearchFeature.State()
                 state.publisher = PublisherFeature.State()
 
-                // 4) 미니앱 WebView 들이 남긴 쿠키/LocalStorage 등 영속 데이터 삭제.
+                // 4) 미니앱 권한 결정 캐시 비우기 — 다음 사용자에게 권한이 누수되지 않게 한다.
+                //    (로컬 캐시가 BridgeHandler 집행의 진실원이므로 반드시 함께 초기화)
+                // 5) 미니앱 WebView 들이 남긴 쿠키/LocalStorage 등 영속 데이터 삭제.
                 return .run { _ in
+                    await PermissionStore.shared.reset()
                     await SessionCleaner.purgeWebViewData()
                 }
 

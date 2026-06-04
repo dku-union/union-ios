@@ -28,9 +28,19 @@ final class PermissionStore {
         return appMap[scope.rawValue] ?? false
     }
 
-    /// 해당 앱의 결정이 로컬 캐시에 존재하는지(= 동의를 한 번이라도 완료).
+    /// 해당 앱의 결정이 로컬 캐시에 존재하는지.
+    /// = 동의(모달 "허용")를 했거나, 타 기기/이전 결정을 하이드레이트한 적이 있음.
+    /// 동의 모달을 다시 띄울지(재프롬프트 skip) 판정하는 fast-path 로 쓰인다.
     func isKnown(appId: Int) -> Bool {
         persisted[String(appId)] != nil
+    }
+
+    /// 특정 앱의 모든 결정을 닫힌(scope→granted) 맵으로 반환(권한 관리 화면용).
+    func decisions(appId: Int) -> [PermissionScope: Bool] {
+        guard let appMap = persisted[String(appId)] else { return [:] }
+        return Dictionary(uniqueKeysWithValues: appMap.compactMap { key, value in
+            PermissionScope(rawValue: key).map { ($0, value) }
+        })
     }
 
     /// 특정 스코프의 결정값(없으면 nil).
@@ -47,5 +57,10 @@ final class PermissionStore {
             }
             store[String(appId)] = appMap
         }
+    }
+
+    /// 전체 권한 결정 캐시 초기화. 로그아웃 시 호출해 다음 사용자에게 권한 결정이 누수되지 않게 한다.
+    func reset() {
+        $persisted.withLock { $0 = [:] }
     }
 }

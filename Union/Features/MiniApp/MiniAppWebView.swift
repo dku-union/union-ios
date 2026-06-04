@@ -25,6 +25,15 @@ struct MiniAppWebView: View {
     /// true + resolvedLocal/Remote 모두 nil = 배포된 버전 없음
     @State private var launchResolved = false
 
+    /// 권한 동의 게이트 단계. .proceed 이전에는 WebView 를 생성하지 않는다.
+    @State private var consentPhase: ConsentPhase = .checking
+
+    private enum ConsentPhase: Equatable {
+        case checking                       // 권한 상태 확인 중
+        case prompting([PermissionItem])    // 동의 모달 표시 (요청 스코프)
+        case proceed                        // 진행 (WebView 로드 허용)
+    }
+
     init(miniApp: MiniApp) {
         self.miniApp = miniApp
         self._navTitle = State(initialValue: miniApp.name)
@@ -32,7 +41,9 @@ struct MiniAppWebView: View {
 
     var body: some View {
         ZStack {
-            if let loadResult = resolvedLocal {
+            // 동의 게이트: 권한 동의가 끝나기(.proceed) 전에는 WebView 를 생성하지 않는다
+            // (미니앱 JS 가 동의 전에 실행되어 브릿지를 호출하는 것을 방지).
+            if consentPhase == .proceed, let loadResult = resolvedLocal {
                 // 로컬 .unionapp 패키지 로드
                 MiniAppNavigationControllerRepresentable(
                     miniApp: miniApp,
@@ -45,7 +56,7 @@ struct MiniAppWebView: View {
                 )
                 .ignoresSafeArea(edges: .bottom)
 
-            } else if let remoteURL = resolvedRemote {
+            } else if consentPhase == .proceed, let remoteURL = resolvedRemote {
                 // 원격 HTTP(S) URL 로드
                 MiniAppWebViewRepresentable(
                     remoteURL: remoteURL,
@@ -58,13 +69,19 @@ struct MiniAppWebView: View {
                 )
                 .ignoresSafeArea(edges: .bottom)
 
-            } else if launchResolved {
+            } else if launchResolved, resolvedLocal == nil, resolvedRemote == nil {
                 // launch API 완료 후에도 URL 없음 = 배포된 버전 없음
+                // (URL 은 있으나 동의 대기 중인 경우는 제외 — 그땐 로딩 상태로 둔다)
                 noUrlView
             }
-            // else: URL 획득 중 → 아무것도 표시하지 않음 (네비게이션 바 로딩 인디케이터로 표시)
+            // else: URL 획득 중 또는 동의 대기 중 → 아무것도 표시하지 않음 (네비게이션 바 로딩 인디케이터로 표시)
 
             if let loadError { errorOverlay(message: loadError) }
+
+            // 최초 접속 권한 동의 모달 (앱-동의 계층)
+            if case let .prompting(items) = consentPhase {
+                consentOverlay(items: items)
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(navTitle)
@@ -91,6 +108,80 @@ struct MiniAppWebView: View {
             }
         }
         .task { await resolveURL() }
+        .task { await runConsentGate() }
+    }
+
+    // MARK: - 권한 동의 게이트
+
+    /// 미니앱 JS 가 실행되기 전(WebView 생성 전) 권한 동의 상태를 결정한다.
+    /// resolveURL 과 동시에 실행되며, WebView 는 `.proceed` + URL 해석 완료 시에만 생성된다.
+    private func runConsentGate() async {
+        let appId = miniApp.id
+
+        // 이미 결정이 있는 앱 → 즉시 진행 (네트워크 없이 fast-path, 모달 skip).
+        if PermissionStore.shared.isKnown(appId: appId) {
+            consentPhase = .proceed
+            return
+        }
+
+        do {
+            let state = try await MiniAppPermissionClient.liveValue.fetch(appId)
+            let declared = state.permissions.filter { $0.permissionScope != nil }
+
+            // 선언된 권한이 없으면 동의받을 것이 없다 → 진행.
+            if declared.isEmpty {
+                consentPhase = .proceed
+                return
+            }
+
+            // 모든 선언 권한에 이미 결정이 있으면(다른 기기/이전 결정) 로컬 캐시 하이드레이트 후 진행.
+            if declared.allSatisfy(\.hasDecision) {
+                hydrate(appId: appId, from: declared)
+                consentPhase = .proceed
+                return
+            }
+
+            // 결정이 필요한 스코프가 있으면 모달 표시.
+            consentPhase = .prompting(declared)
+        } catch {
+            // 오프라인/오류 → 앱은 로드(fail-open), 다음 접속 시 재프롬프트.
+            consentPhase = .proceed
+        }
+    }
+
+    /// "허용" — 토글 상태대로 로컬 캐시에 저장 → 진행. 백엔드 동기화는 비차단(로컬이 집행의 진실원).
+    private func handleConsent(decisions: [PermissionScope: Bool]) {
+        let appId = miniApp.id
+        PermissionStore.shared.setDecisions(appId: appId, decisions)
+        consentPhase = .proceed
+        Task {
+            do {
+                _ = try await MiniAppPermissionClient.liveValue.submit(appId, decisions)
+            } catch {
+                // 로컬 집행은 유효. 백엔드 동기화 실패만 로깅(권한 관리 화면에서 재시도 가능).
+                print("[Permission] 권한 결정 백엔드 동기화 실패 appId=\(appId): \(error)")
+            }
+        }
+    }
+
+    /// 백엔드 결정값으로 로컬 캐시를 채운다(모달 없이 진행하는 경로 — 타 기기/이전 결정 존재 시).
+    private func hydrate(appId: Int, from declared: [PermissionItem]) {
+        let decisions = Dictionary(uniqueKeysWithValues: declared.compactMap { item -> (PermissionScope, Bool)? in
+            guard let scope = item.permissionScope else { return nil }
+            return (scope, item.granted)
+        })
+        PermissionStore.shared.setDecisions(appId: appId, decisions)
+    }
+
+    @ViewBuilder
+    private func consentOverlay(items: [PermissionItem]) -> some View {
+        MiniAppConsentModal(
+            appName: miniApp.name,
+            scopes: items.compactMap(\.permissionScope),
+            onAllow: { handleConsent(decisions: $0) },
+            onPostpone: { consentPhase = .proceed }
+        )
+        .zIndex(10)
     }
 
     // MARK: - URL 해석

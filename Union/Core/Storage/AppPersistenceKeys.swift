@@ -19,14 +19,6 @@ extension SharedKey where Self == FileStorageKey<[Int]> {
             URL.documentsDirectory.appendingPathComponent("union.launchedApps.json")
         )
     }
-
-    /// 동의 얼럿을 한 번이라도 완료한 미니앱 id.
-    /// 재접속 시 동의 모달을 다시 띄우지 않기 위한 fast-path (launch 기록과 독립적으로 관리).
-    static var consentedAppIds: Self {
-        .fileStorage(
-            URL.documentsDirectory.appendingPathComponent("union.consentedApps.json")
-        )
-    }
 }
 
 // MARK: - 미니앱 권한 결정
