@@ -19,6 +19,7 @@ struct MiniAppWebView: View {
     @State private var navTitle: String
     @State private var loadError: String?
     @State private var canGoBack = false
+    @State private var showReportSheet = false
 
     @State private var resolvedLocal: MiniAppLoadResult?
     @State private var resolvedRemote: URL?
@@ -92,6 +93,24 @@ struct MiniAppWebView: View {
                         .fontWeight(.medium)
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button(role: .destructive) {
+                        showReportSheet = true
+                    } label: {
+                        Label("신고하기", systemImage: "exclamationmark.bubble")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .fontWeight(.medium)
+                }
+            }
+        }
+        .sheet(isPresented: $showReportSheet) {
+            ReportSheet(
+                miniAppId: miniApp.id,
+                miniAppName: miniApp.name.isEmpty ? navTitle : miniApp.name
+            )
         }
         .task { await resolveURL() }
         // 진입 경로(카드 push / 딥링크·테스트 fullScreenCover)에 따라 바깥 NavigationStack 의

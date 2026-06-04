@@ -278,6 +278,12 @@ struct AppFeature {
                 return .none
 
             case .logout:
+                // 0) keychain 을 비우기 전에 서버 teardown 에 쓸 자격증명 스냅샷.
+                //    (clearAll 이후엔 Bearer 토큰을 못 읽으므로 미리 캡처)
+                let teardownAccessToken = KeychainStore.load(.accessToken)
+                let teardownFcmToken = DevicePushTokenStore.shared.current()
+                let teardownDeviceId = DeviceIdentity.deviceId
+
                 // 1) 토큰(Access/Refresh) 즉시 폐기 — TokenProvider 가 사용 중이던
                 //    refresh Task 가 있다면 다음 호출에서 noRefreshToken 으로 떨어진다.
                 KeychainStore.clearAll()
@@ -298,8 +304,14 @@ struct AppFeature {
                 state.search = SearchFeature.State()
                 state.publisher = PublisherFeature.State()
 
-                // 4) 미니앱 WebView 들이 남긴 쿠키/LocalStorage 등 영속 데이터 삭제.
+                // 4) 서버 세션/FCM 토큰 정리(best-effort) 후, 미니앱 WebView 들이 남긴
+                //    쿠키/LocalStorage 등 영속 데이터 삭제.
                 return .run { _ in
+                    await SessionTeardown.purgeServerSession(
+                        accessToken: teardownAccessToken,
+                        fcmToken: teardownFcmToken,
+                        deviceId: teardownDeviceId
+                    )
                     await SessionCleaner.purgeWebViewData()
                 }
 
