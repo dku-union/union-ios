@@ -10,6 +10,8 @@ extension Notification.Name {
     static let unionBridgeNotificationReceived = Notification.Name("union.bridge.notification.received")
     /// DeeplinkRouter → AppFeature: MINIAPP 딥링크 — 해당 미니앱을 전체화면으로 직접 연다.
     static let unionOpenMiniApp = Notification.Name("union.deeplink.openMiniApp")
+    /// HomeView → MainTabView: 홈 상단 알림 버튼 탭 — 알림 탭으로 전환한다.
+    static let unionShowNotifications = Notification.Name("union.tab.showNotifications")
 }
 
 // MARK: - Payload

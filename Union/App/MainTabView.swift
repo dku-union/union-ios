@@ -94,6 +94,10 @@ struct MainTabView: View {
             // 사용자가 인박스에서 한 번 더 탭하면 NotificationsFeature 가 미니앱으로 push.
             selectedTab = .notifications
         }
+        .onReceive(NotificationCenter.default.publisher(for: .unionShowNotifications)) { _ in
+            // 홈 상단 알림 버튼 탭 → 알림 탭으로 전환.
+            selectedTab = .notifications
+        }
     }
 }
 
