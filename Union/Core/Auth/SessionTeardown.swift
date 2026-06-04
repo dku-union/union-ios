@@ -20,14 +20,20 @@ enum SessionTeardown {
         // 새 세션의 refresh·FCM 토큰을 무효화하는 race 를 방지한다.
         if KeychainStore.load(.accessToken) != nil { return }
 
-        if let fcmToken {
-            let body = try? JSONSerialization.data(
-                withJSONObject: ["token": fcmToken, "deviceId": deviceId]
-            )
-            await send(method: "DELETE", path: "/notifications/token", accessToken: accessToken, body: body)
+        // 두 호출은 서로 독립적이므로 병렬 수행한다 — 한쪽이 지연돼도 다른 쪽(특히 세션 무효화)을 막지 않는다.
+        await withTaskGroup(of: Void.self) { group in
+            if let fcmToken {
+                group.addTask {
+                    let body = try? JSONSerialization.data(
+                        withJSONObject: ["token": fcmToken, "deviceId": deviceId]
+                    )
+                    await send(method: "DELETE", path: "/notifications/token", accessToken: accessToken, body: body)
+                }
+            }
+            group.addTask {
+                await send(method: "POST", path: "/api/v1/auth/logout", accessToken: accessToken, body: nil)
+            }
         }
-
-        await send(method: "POST", path: "/api/v1/auth/logout", accessToken: accessToken, body: nil)
     }
 
     private static func send(method: String, path: String, accessToken: String, body: Data?) async {

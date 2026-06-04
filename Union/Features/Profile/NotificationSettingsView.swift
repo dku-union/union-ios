@@ -17,6 +17,8 @@ struct NotificationSettingsView: View {
     @State private var rows: [Row] = []
     @State private var phase: Phase = .loading
     @State private var errorBanner: String?
+    /// 푸시 토글 요청이 진행 중인 행. 같은 행의 연타로 인한 out-of-order 응답을 막는다.
+    @State private var inFlight: Set<Int64> = []
 
     private enum Phase: Equatable { case loading, loaded, failed(String) }
 
@@ -86,7 +88,7 @@ struct NotificationSettingsView: View {
             ))
             .labelsHidden()
             .tint(UNColor.interactive)
-            .disabled(row.appId == nil)
+            .disabled(row.appId == nil || inFlight.contains(row.id))
         }
     }
 
@@ -144,14 +146,16 @@ struct NotificationSettingsView: View {
     }
 
     private func setPush(_ row: Row, enabled: Bool) {
-        guard let appId = row.appId else { return }
+        guard let appId = row.appId, !inFlight.contains(row.id) else { return }
+        inFlight.insert(row.id)
         // 낙관적 업데이트
         updateRow(id: row.id) { $0.pushEnabled = enabled }
         Task {
+            defer { inFlight.remove(row.id) }
             do {
                 try await NotificationClient.liveValue.setPushEnabled(appId, enabled)
             } catch {
-                // 실패 시 롤백
+                // 실패 시 해당 행만 롤백
                 updateRow(id: row.id) { $0.pushEnabled = !enabled }
                 errorBanner = "푸시 설정을 변경하지 못했습니다."
             }
@@ -159,14 +163,16 @@ struct NotificationSettingsView: View {
     }
 
     private func unsubscribe(_ row: Row) {
-        guard let appId = row.appId else { return }
-        let snapshot = rows
-        rows.removeAll { $0.id == row.id }
+        guard let appId = row.appId,
+              let idx = rows.firstIndex(where: { $0.id == row.id }) else { return }
+        let removed = rows[idx]
+        rows.remove(at: idx)
         Task {
             do {
                 try await NotificationClient.liveValue.unsubscribe(appId)
             } catch {
-                rows = snapshot   // 롤백
+                // 실패 시 해당 행만 원래 위치에 복원 — 그 사이 다른 행 변경은 보존.
+                rows.insert(removed, at: min(idx, rows.count))
                 errorBanner = "구독 해지에 실패했습니다."
             }
         }

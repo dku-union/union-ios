@@ -284,9 +284,9 @@ struct AppFeature {
                 let teardownFcmToken = DevicePushTokenStore.shared.current()
                 let teardownDeviceId = DeviceIdentity.deviceId
 
-                // 1) 토큰(Access/Refresh) 즉시 폐기 — TokenProvider 가 사용 중이던
-                //    refresh Task 가 있다면 다음 호출에서 noRefreshToken 으로 떨어진다.
-                KeychainStore.clearAll()
+                // 1) 토큰 폐기/서버 정리는 아래 effect 에서 invalidate → clearAll 순으로 수행한다.
+                //    (TokenProvider.invalidate 가 진행 중 refresh 를 취소·무효화한 뒤 비워야
+                //     in-flight refresh 로 세션이 되살아나지 않는다)
 
                 // 2) 사용자에 묶인 로컬 히스토리(@Shared 파일) 비우기.
                 //    fresh State 로 교체하기 전에 기존 @Shared 핸들로 비워야 디스크에도 반영된다.
@@ -304,9 +304,11 @@ struct AppFeature {
                 state.search = SearchFeature.State()
                 state.publisher = PublisherFeature.State()
 
-                // 4) 서버 세션/FCM 토큰 정리(best-effort) 후, 미니앱 WebView 들이 남긴
-                //    쿠키/LocalStorage 등 영속 데이터 삭제.
+                // 4) 진행 중 refresh 무효화 → 로컬 토큰 폐기 → 서버 세션/FCM 정리(best-effort)
+                //    → 미니앱 WebView 영속 데이터 삭제. 모두 best-effort 이며 실패해도 로그아웃 완료.
                 return .run { _ in
+                    await TokenProvider.shared.invalidate()
+                    KeychainStore.clearAll()
                     await SessionTeardown.purgeServerSession(
                         accessToken: teardownAccessToken,
                         fcmToken: teardownFcmToken,

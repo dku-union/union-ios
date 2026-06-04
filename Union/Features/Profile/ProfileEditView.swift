@@ -163,26 +163,57 @@ struct ProfileEditView: View {
         guard hasChanges, !isSaving else { return }
         isSaving = true
         Task {
-            do {
-                var latest: UserMeResponse?
+            var latest: UserMeResponse?
 
-                if trimmedNickname != profile.nickname && !trimmedNickname.isEmpty {
+            // 1) 닉네임 먼저 반영. 실패하면 이미지 업로드는 시도하지 않는다.
+            if trimmedNickname != profile.nickname && !trimmedNickname.isEmpty {
+                do {
                     latest = try await UserClient.liveValue.updateNickname(trimmedNickname)
+                } catch {
+                    finishWithError(error)
+                    return
                 }
-
-                if let pickedImage, let jpeg = pickedImage.jpegData(compressionQuality: 0.8) {
-                    latest = try await UserClient.liveValue.changeProfileImage(jpeg)
-                }
-
-                isSaving = false
-                if let latest {
-                    onUpdated(latest.toUserProfile())
-                }
-                dismiss()
-            } catch {
-                isSaving = false
-                errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             }
+
+            // 2) 이미지 업로드. 닉네임은 이미 서버에 반영됐을 수 있으므로, 이미지 실패 시에도
+            //    그때까지의 성공분(닉네임)을 부모에 전파한 뒤 오류만 표시한다(부분 성공 일관성).
+            if let pickedImage {
+                let resized = Self.downsampled(pickedImage)
+                guard let jpeg = resized.jpegData(compressionQuality: 0.8) else {
+                    finishWithError(UserClientError.uploadFailed, partial: latest)
+                    return
+                }
+                do {
+                    latest = try await UserClient.liveValue.changeProfileImage(jpeg)
+                } catch {
+                    finishWithError(error, partial: latest)
+                    return
+                }
+            }
+
+            isSaving = false
+            if let latest { onUpdated(latest.toUserProfile()) }
+            dismiss()
+        }
+    }
+
+    /// 실패 처리. `partial` 이 있으면(예: 닉네임만 성공) 부모 상태를 먼저 갱신한 뒤 오류를 표시한다.
+    private func finishWithError(_ error: Error, partial: UserMeResponse? = nil) {
+        isSaving = false
+        if let partial { onUpdated(partial.toUserProfile()) }
+        errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+    }
+
+    /// 업로드 전 이미지를 최대 변(maxDimension)으로 축소해 메모리/업로드 용량을 제한한다.
+    private static func downsampled(_ image: UIImage, maxDimension: CGFloat = 1024) -> UIImage {
+        let longest = max(image.size.width, image.size.height)
+        guard longest > maxDimension, longest > 0 else { return image }
+        let scale = maxDimension / longest
+        let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: newSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
         }
     }
 }
