@@ -5,6 +5,7 @@ struct ProfileView: View {
 
     @State private var user: UserProfile?
     @State private var showLogoutConfirm = false
+    @State private var showPermissions = false
 
     /// /api/v1/users/me 응답이 도착하기 전 보여줄 폴백 프로필.
     /// nickname/university 는 빈 상태로 표시하지 않기 위해 placeholder.
@@ -51,6 +52,9 @@ struct ProfileView: View {
                 Button("취소", role: .cancel) {}
             } message: {
                 Text("저장된 로그인 정보와 미니앱 세션이 모두 삭제됩니다.")
+            }
+            .navigationDestination(isPresented: $showPermissions) {
+                PermissionSettingsView()
             }
         }
     }
@@ -124,7 +128,7 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             menuRow(icon: "pencil", title: "프로필 수정", color: UNColor.interactive)
             Divider().padding(.leading, 52)
-            menuRow(icon: "lock.shield", title: "권한 관리", color: UNColor.violet)
+            menuRow(icon: "lock.shield", title: "권한 관리", color: UNColor.violet, action: { showPermissions = true })
             Divider().padding(.leading, 52)
             menuRow(icon: "bell", title: "알림 설정", color: UNColor.warning)
             Divider().padding(.leading, 52)
