@@ -74,22 +74,17 @@ struct ProfileEditView: View {
 
     private var photoSection: some View {
         Section {
+            // avatar 와 "사진 변경" 을 한 행에 묶어 그 사이의 Form 기본 구분선(얇은 바)을 없앤다.
             PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
-                HStack {
-                    Spacer()
+                VStack(spacing: UNSpacing.md) {
                     avatar
-                    Spacer()
+                    Text("사진 변경")
+                        .font(UNFont.bodyMedium(.medium))
+                        .foregroundStyle(UNColor.interactive)
                 }
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(.plain)
-            .listRowBackground(Color.clear)
-
-            PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
-                Text("사진 변경")
-                    .font(UNFont.bodyMedium(.medium))
-                    .foregroundStyle(UNColor.interactive)
-                    .frame(maxWidth: .infinity)
-            }
             .listRowBackground(Color.clear)
         }
     }
@@ -117,6 +112,11 @@ struct ProfileEditView: View {
         ZStack {
             if let pickedImage {
                 Image(uiImage: pickedImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else if let urlString = profile.profileImageUrl,
+                      let cached = ProfileImageStore.shared.image(for: urlString) {
+                Image(uiImage: cached)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } else if let urlString = profile.profileImageUrl, let url = URL(string: urlString) {
@@ -185,6 +185,11 @@ struct ProfileEditView: View {
                 }
                 do {
                     latest = try await UserClient.liveValue.changeProfileImage(jpeg)
+                    // 업로드 성공 시 방금 이미지를 새 URL 키로 캐시 → ProfileView 가 GCS 재다운로드
+                    // 지연(이모지 깜빡임) 없이 즉시 반영한다.
+                    if let url = latest?.profileImage {
+                        ProfileImageStore.shared.set(resized, for: url)
+                    }
                 } catch {
                     finishWithError(error, partial: latest)
                     return
