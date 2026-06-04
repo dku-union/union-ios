@@ -6,7 +6,7 @@ import ComposableArchitecture
 @Reducer
 struct AppFeature {
 
-    private enum CancelID { case sessionObserver }
+    private enum CancelID { case sessionObserver, deeplinkObserver }
 
     @ObservableState
     struct State {
@@ -27,6 +27,9 @@ struct AppFeature {
         var runningTest: TestRun?
         var testRedeemError: String?
 
+        /// 푸시 MINIAPP 딥링크로 열리는 미니앱 (fullScreenCover). 탭/화면 위에 전체화면으로 뜬다.
+        var pendingDeeplinkApp: DeeplinkRun?
+
         /// JWT의 role 이 ROLE_PUBLISHER 또는 ROLE_ADMIN 인지 — publisher 전용 탭 노출 여부.
         var isPublisher: Bool {
             switch role {
@@ -40,6 +43,13 @@ struct AppFeature {
     struct TestRun: Equatable {
         let miniApp: MiniApp
         let versionNumber: String
+    }
+
+    /// 푸시 MINIAPP 딥링크 실행 — 합성 MiniApp + 미니앱 내부 초기 경로(path).
+    struct DeeplinkRun: Equatable, Identifiable {
+        let miniApp: MiniApp
+        let initialPath: String?
+        var id: Int { miniApp.id }
     }
 
     enum Action {
@@ -61,6 +71,9 @@ struct AppFeature {
         case testRedeemFailed(String)
         case dismissRunningTest
         case dismissTestRedeemError
+        /// 푸시 MINIAPP 딥링크 수신 → 해당 미니앱을 fullScreenCover 로 연다.
+        case openMiniAppFromPush(DeeplinkPayload)
+        case dismissDeeplinkApp
     }
 
     @Dependency(\.publisherAppsClient) var publisherAppsClient
@@ -91,9 +104,25 @@ struct AppFeature {
                     await PushNotificationCoordinator.bootstrap()
                 }
 
+                // 푸시 MINIAPP 딥링크 구독 — 앱 실행 중 탭으로 도착하는 deeplink 를 받는다.
+                let deeplinkObserve: Effect<Action> = .run { send in
+                    for await note in NotificationCenter.default.notifications(named: .unionOpenMiniApp) {
+                        guard let payload = note.userInfo?["payload"] as? DeeplinkPayload else { continue }
+                        await send(.openMiniAppFromPush(payload))
+                    }
+                }
+                .cancellable(id: CancelID.deeplinkObserver)
+
+                // 콜드런치(앱 종료 상태에서 푸시 탭)로 구독 전에 도착한 deeplink 회수.
+                let consumeColdLaunch: Effect<Action> = .run { send in
+                    if let payload = await DeeplinkRouter.shared.consumePendingMiniApp() {
+                        await send(.openMiniAppFromPush(payload))
+                    }
+                }
+
                 guard KeychainStore.isLoggedIn else {
                     state.isLoggedIn = false
-                    return .merge(observeEffect, pushBootstrap)
+                    return .merge(observeEffect, pushBootstrap, deeplinkObserve, consumeColdLaunch)
                 }
 
                 // 토큰 유효성 확인 (만료 임박 시 proactive refresh 수행)
@@ -106,7 +135,7 @@ struct AppFeature {
                     }
                 }
 
-                return .merge(validateEffect, observeEffect, pushBootstrap)
+                return .merge(validateEffect, observeEffect, pushBootstrap, deeplinkObserve, consumeColdLaunch)
 
             case .sessionValid:
                 state.isLoggedIn = true
@@ -214,6 +243,36 @@ struct AppFeature {
                 state.testRedeemError = nil
                 return .none
 
+            case .openMiniAppFromPush(let payload):
+                // 로그인 상태에서, 미니앱 DB id 가 동봉됐을 때만 연다.
+                guard state.isLoggedIn, let miniAppId = payload.miniAppId else { return .none }
+                // 이미 같은 미니앱이 열려 있으면 중복 표시 방지.
+                guard state.pendingDeeplinkApp?.miniApp.id != miniAppId else { return .none }
+                let synthetic = MiniApp(
+                    id: miniAppId,
+                    name: "",
+                    description: "",
+                    publisher: "",
+                    category: "push",
+                    iconUrl: nil,
+                    iconEmoji: nil,
+                    iconColorHex: nil,
+                    rating: 0,
+                    ratingCount: 0,
+                    isNew: false,
+                    isPopular: false,
+                    createdAt: Date(),
+                    // webUrl 은 비움 — MiniAppWebView 가 launch API(/mini-apps/{miniAppId}/launch)로 bundleUrl 을 가져온다.
+                    webUrl: nil,
+                    appId: payload.appId
+                )
+                state.pendingDeeplinkApp = DeeplinkRun(miniApp: synthetic, initialPath: payload.path)
+                return .none
+
+            case .dismissDeeplinkApp:
+                state.pendingDeeplinkApp = nil
+                return .none
+
             case .checkAuth:
                 state.isLoggedIn = KeychainStore.isLoggedIn
                 return .none
@@ -233,6 +292,7 @@ struct AppFeature {
                 state.pendingTestContext = nil
                 state.runningTest = nil
                 state.testRedeemError = nil
+                state.pendingDeeplinkApp = nil
                 state.auth = AuthFeature.State()
                 state.home = HomeFeature.State()
                 state.search = SearchFeature.State()

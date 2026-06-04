@@ -31,6 +31,7 @@ struct ProfileView: View {
             }
             .background(UNColor.bgPrimary)
             .navigationTitle("마이페이지")
+            .navigationBarTitleDisplayMode(.inline)
             .task {
                 guard user == nil else { return }
                 do {

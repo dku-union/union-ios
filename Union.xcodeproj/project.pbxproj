@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BF189C3C2FCEC59A000C30A7 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BF189C3D2FCEC59A000C30A7 /* FirebaseMessaging */; };
 		BF2836232F6ED4360037E5BB /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = BF2836222F6ED4360037E5BB /* ComposableArchitecture */; };
 		BF9CA8C12F7962DA007C3992 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = BF9CA8C02F7962DA007C3992 /* ZIPFoundation */; };
-		BF189C3C2FCEC59A000C30A7 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BF189C3D2FCEC59A000C30A7 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -161,12 +161,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Union/Union.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = H857U5DNT9;
+				DEVELOPMENT_TEAM = U9SLX327XS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Union/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Union;
+				INFOPLIST_KEY_CFBundleDisplayName = "유니온";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSCameraUsageDescription = "미니앱에서 QR 코드 스캔을 위해 카메라 권한이 필요합니다.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "미니앱에서 위치 기반 서비스를 사용하려면 위치 권한이 필요합니다.";
@@ -183,6 +184,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dku.union;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -197,12 +199,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Union/Union.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = H857U5DNT9;
+				DEVELOPMENT_TEAM = U9SLX327XS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Union/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Union;
+				INFOPLIST_KEY_CFBundleDisplayName = "유니온";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSCameraUsageDescription = "미니앱에서 QR 코드 스캔을 위해 카메라 권한이 필요합니다.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "미니앱에서 위치 기반 서비스를 사용하려면 위치 권한이 필요합니다.";
@@ -219,6 +222,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dku.union;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -399,6 +403,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		BF189C3D2FCEC59A000C30A7 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF189C3B2FCEC59A000C30A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
 		BF2836222F6ED4360037E5BB /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = BF2836212F6ED4360037E5BB /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
@@ -408,11 +417,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BF9CA8BF2F7962D9007C3992 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
-		};
-		BF189C3D2FCEC59A000C30A7 /* FirebaseMessaging */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BF189C3B2FCEC59A000C30A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

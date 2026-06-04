@@ -9,6 +9,7 @@ struct NotificationsView: View {
             content
                 .background(UNColor.bgPrimary)
                 .navigationTitle("알림")
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("전부 읽음") {
@@ -67,9 +68,10 @@ struct NotificationsView: View {
 
     private var loadingPlaceholder: some View {
         VStack(spacing: UNSpacing.md) {
-            ForEach(0..<5, id: \.self) { _ in
+            ForEach(0..<4, id: \.self) { _ in
                 NotificationRowSkeleton()
             }
+            Spacer()
         }
         .padding(UNSpacing.xl)
     }
@@ -193,24 +195,21 @@ private struct NotificationRow: View {
 private struct NotificationRowSkeleton: View {
     var body: some View {
         HStack(alignment: .top, spacing: UNSpacing.lg) {
-            Circle()
-                .fill(UNColor.divider)
+            SkeletonRect(cornerRadius: UNRadius.full)
                 .frame(width: 40, height: 40)
-            VStack(alignment: .leading, spacing: UNSpacing.xs) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(UNColor.divider)
-                    .frame(height: 14)
-                    .frame(maxWidth: 220, alignment: .leading)
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(UNColor.divider.opacity(0.6))
-                    .frame(height: 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: UNSpacing.sm) {
+                SkeletonRect()
+                    .frame(width: 150, height: 13)
+                SkeletonRect()
+                    .frame(height: 11)
+                SkeletonRect()
+                    .frame(width: 70, height: 10)
             }
-            Spacer()
         }
         .padding(UNSpacing.lg)
         .background(UNColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: UNRadius.md, style: .continuous))
-        .redacted(reason: .placeholder)
+        .unShadow(.subtle)
     }
 }

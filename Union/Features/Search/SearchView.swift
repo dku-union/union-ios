@@ -22,6 +22,7 @@ struct SearchView: View {
             }
             .background(UNColor.bgPrimary)
             .navigationTitle("검색")
+            .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $store.query, prompt: "미니앱 검색")
             .onSubmit(of: .search) {
                 store.send(.submitSearch)

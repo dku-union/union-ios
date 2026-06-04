@@ -8,6 +8,8 @@ extension Notification.Name {
     static let unionDeeplinkReceived = Notification.Name("union.deeplink.received")
     /// AppDelegate → BridgeHandler: 미니앱 SDK 에 notification:received 이벤트 전달.
     static let unionBridgeNotificationReceived = Notification.Name("union.bridge.notification.received")
+    /// DeeplinkRouter → AppFeature: MINIAPP 딥링크 — 해당 미니앱을 전체화면으로 직접 연다.
+    static let unionOpenMiniApp = Notification.Name("union.deeplink.openMiniApp")
 }
 
 // MARK: - Payload
@@ -18,6 +20,8 @@ struct DeeplinkPayload: Sendable, Equatable {
     let category: String?
     let deeplinkType: DeepType
     let appId: String?
+    /// 미니앱 DB id (Long). MINIAPP 딥링크에서 launch API 호출에 사용. Spring `buildFcmData` 가 동봉.
+    let miniAppId: Int?
     let path: String?
     let webUrl: String?
     let internalRoute: String?
@@ -33,6 +37,8 @@ struct DeeplinkPayload: Sendable, Equatable {
         self.campaignId = userInfo["campaignId"] as? String
         self.category = userInfo["category"] as? String
         self.appId = userInfo["appId"] as? String
+        // FCM data 값은 전부 String 으로 전달됨 → Int 로 파싱 (드물게 native dict 면 Int 직접).
+        self.miniAppId = (userInfo["miniAppId"] as? String).flatMap(Int.init) ?? (userInfo["miniAppId"] as? Int)
         self.path = userInfo["path"] as? String
         self.webUrl = userInfo["webUrl"] as? String
         self.internalRoute = userInfo["internalRoute"] as? String
@@ -50,7 +56,17 @@ final class DeeplinkRouter {
 
     enum Source: String { case coldLaunch, background, tap }
 
+    /// 콜드런치 시 AppFeature 가 `.unionOpenMiniApp` 을 구독하기 전에 도착한 MINIAPP payload.
+    /// AppFeature 가 onAppear 에서 `consumePendingMiniApp()` 으로 회수한다.
+    private var pendingMiniApp: DeeplinkPayload?
+
     private init() {}
+
+    /// 콜드런치로 구독 전에 들어온 MINIAPP deeplink 를 1회성으로 회수한다.
+    func consumePendingMiniApp() -> DeeplinkPayload? {
+        defer { pendingMiniApp = nil }
+        return pendingMiniApp
+    }
 
     /// 알림 수신/탭 시 호출 — AppFeature 가 .onAppear 에서 등록한 listener 가 받아 처리한다.
     nonisolated func handle(userInfo: [AnyHashable: Any], source: Source) {
@@ -64,6 +80,24 @@ final class DeeplinkRouter {
         case .background:
             broadcastToBridge(userInfo: userInfo)
         case .tap, .coldLaunch:
+            // MINIAPP 딥링크 → 미니앱을 직접 전체화면으로 연다.
+            // 앱 실행 중이면 구독자가 즉시 받고, 콜드런치면 pendingMiniApp 에 보관해 onAppear 가 회수한다.
+            if payload.deeplinkType == .MINIAPP, payload.miniAppId != nil {
+                broadcastToBridge(userInfo: userInfo)
+                nonisolated(unsafe) let openPayload = payload
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        DeeplinkRouter.shared.pendingMiniApp = openPayload
+                    }
+                    NotificationCenter.default.post(
+                        name: .unionOpenMiniApp,
+                        object: nil,
+                        userInfo: ["payload": openPayload]
+                    )
+                }
+                return
+            }
+
             let routerInfo: [String: Any] = [
                 "payload": payload,
                 "source": source.rawValue

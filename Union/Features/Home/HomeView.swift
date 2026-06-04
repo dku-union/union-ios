@@ -1,7 +1,7 @@
 import SwiftUI
 import ComposableArchitecture
 
-// MARK: - Home View (Glassmorphism)
+// MARK: - Home View
 
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
@@ -25,7 +25,7 @@ struct HomeView: View {
                             .padding(.top, UNSpacing.sm)
 
                         if isFirstLoading {
-                            HomeSkeletonView(showRecentSection: store.hasEverLaunchedApp)
+                            HomeSkeletonView()
                                 .transition(.opacity)
                         } else {
                             contentSections
@@ -76,7 +76,8 @@ struct HomeView: View {
             handleBannerTap(banner)
         }
 
-        categorySection
+        // 카테고리 섹션은 카테고리 기능(코드↔표시명 매핑/탐색) 준비 전까지 임시 숨김.
+        // categorySection
 
         if !store.recentApps.isEmpty {
             miniAppHorizontalSection(title: "최근 사용", apps: store.recentApps)
@@ -88,7 +89,9 @@ struct HomeView: View {
             miniAppHorizontalSection(title: "새로운 미니앱", apps: store.newApps)
         }
 
-        recommendedSection
+        if !store.recommendedApps.isEmpty {
+            recommendedSection
+        }
     }
 
     // MARK: - Background
@@ -135,8 +138,10 @@ struct HomeView: View {
                     .font(UNFont.captionLarge())
                     .foregroundStyle(UNColor.textTertiary)
                     .frame(width: 40, height: 40)
-                    .background(.ultraThinMaterial)
+                    .background(UNColor.bgSecondary)
                     .clipShape(Circle())
+                    .overlay(Circle().stroke(UNColor.border, lineWidth: 1))
+                    .unShadow(.subtle)
             }
             Button {} label: {
                 ZStack(alignment: .topTrailing) {
@@ -144,8 +149,10 @@ struct HomeView: View {
                         .font(UNFont.headingLarge())
                         .foregroundStyle(UNColor.textSecondary)
                         .frame(width: 40, height: 40)
-                        .background(.ultraThinMaterial)
+                        .background(UNColor.bgSecondary)
                         .clipShape(Circle())
+                        .overlay(Circle().stroke(UNColor.border, lineWidth: 1))
+                        .unShadow(.subtle)
 
                     Circle()
                         .fill(UNColor.interactive)
