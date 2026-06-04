@@ -155,7 +155,11 @@ struct ProfileView: View {
     @ViewBuilder
     private func avatarView(_ display: UserProfile) -> some View {
         ZStack {
-            if let urlString = display.profileImageUrl, let url = URL(string: urlString) {
+            if let urlString = display.profileImageUrl,
+               let cached = ProfileImageStore.shared.image(for: urlString) {
+                // 방금 업로드한 이미지는 캐시에서 즉시 표시(재다운로드 지연 없음).
+                Image(uiImage: cached).resizable().aspectRatio(contentMode: .fill)
+            } else if let urlString = display.profileImageUrl, let url = URL(string: urlString) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
