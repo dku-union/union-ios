@@ -15,6 +15,11 @@ enum SessionTeardown {
     static func purgeServerSession(accessToken: String?, fcmToken: String?, deviceId: String) async {
         guard let accessToken else { return }
 
+        // 로그아웃은 keychain 을 먼저 비운다. 이 시점에 access token 이 다시 존재한다면
+        // 그 사이 재로그인이 일어난 것이므로 서버 정리를 건너뛴다 — 늦게 도착한 logout/토큰삭제가
+        // 새 세션의 refresh·FCM 토큰을 무효화하는 race 를 방지한다.
+        if KeychainStore.load(.accessToken) != nil { return }
+
         if let fcmToken {
             let body = try? JSONSerialization.data(
                 withJSONObject: ["token": fcmToken, "deviceId": deviceId]
