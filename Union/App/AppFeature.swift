@@ -306,7 +306,8 @@ struct AppFeature {
                 state.publisher = PublisherFeature.State()
 
                 // 4) 진행 중 refresh 무효화 → 로컬 토큰 폐기 → 서버 세션/FCM 정리(best-effort)
-                //    → 미니앱 WebView 영속 데이터 삭제. 모두 best-effort 이며 실패해도 로그아웃 완료.
+                //    → 미니앱 권한 결정 캐시 초기화(다음 사용자 누수 방지) → WebView 영속 데이터 삭제.
+                //    모두 best-effort 이며 실패해도 로그아웃 완료.
                 return .run { _ in
                     await TokenProvider.shared.invalidate()
                     KeychainStore.clearAll()
@@ -316,6 +317,7 @@ struct AppFeature {
                         fcmToken: teardownFcmToken,
                         deviceId: teardownDeviceId
                     )
+                    await PermissionStore.shared.reset()
                     await SessionCleaner.purgeWebViewData()
                 }
 

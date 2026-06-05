@@ -189,4 +189,24 @@ extension APIEndpoint {
     static var mySubscriptions: Self {
         .init(path: "/api/v1/users/me/subscriptions")
     }
+
+    // MARK: - MiniApp Permissions
+
+    /// 미니앱 선언 권한 + 현재 사용자 결정 조회 (최초 접속 게이트).
+    /// GET /api/v1/users/me/miniapps/{id}/permissions
+    static func miniAppPermissions(id: Int) -> Self {
+        .init(path: "/api/v1/users/me/miniapps/\(id)/permissions")
+    }
+
+    /// 권한 결정 배치 업서트 → 갱신된 상태 반환.
+    /// PUT /api/v1/users/me/miniapps/{id}/permissions
+    static func updateMiniAppPermissions(id: Int, body: Data) -> Self {
+        .init(path: "/api/v1/users/me/miniapps/\(id)/permissions", method: .put, body: body)
+    }
+
+    /// 사용자 전체 권한 결정 목록 (권한 관리 화면).
+    /// GET /api/v1/users/me/permissions
+    static var allMiniAppPermissions: Self {
+        .init(path: "/api/v1/users/me/permissions")
+    }
 }

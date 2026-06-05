@@ -205,13 +205,36 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
     }
 
     private func routeToModule(module: String, action: String, params: [String: Any]) async throws -> Any? {
+        // 권한 게이트 — 동의되지 않은(선언 후 거부) 스코프를 요구하는 호출을 차단.
+        // 동의가 확립되지 않은 앱은 PermissionStore 가 fail-open 으로 통과시킨다(기존 앱 미파손).
+        if let scope = Self.requiredScope(module: module, action: action),
+           !PermissionStore.shared.isAllowed(appId: miniApp.id, scope: scope) {
+            throw BridgeModuleError(
+                code: "PERMISSION_DENIED",
+                message: "'\(scope.rawValue)' 권한이 거부되었습니다"
+            )
+        }
+
         // [String: Any]는 Sendable이 아니지만, 이 params는 현재 Task 내에서만 사용되므로 안전
         nonisolated(unsafe) let params = params
         nonisolated(unsafe) let storageModule = self.storageModule
         nonisolated(unsafe) let webView = self.webView
 
         switch module {
-        case "auth":      return try await authModule.handle(action: action, params: params)
+        case "auth":
+            let result = try await authModule.handle(action: action, params: params)
+            // getUserProfile: email/university 는 필드 단위 게이팅 — 미허용 스코프는 응답에서 제거.
+            if action == "getUserProfile", var profile = result as? [String: Any] {
+                let appId = miniApp.id
+                if !PermissionStore.shared.isAllowed(appId: appId, scope: .userEmail) {
+                    profile.removeValue(forKey: "email")
+                }
+                if !PermissionStore.shared.isAllowed(appId: appId, scope: .userUniversity) {
+                    profile.removeValue(forKey: "university")
+                }
+                return profile
+            }
+            return result
         case "ui":        return try await uiModule.handle(action: action, params: params, webView: webView)
         case "device":    return try await deviceModule.handle(action: action, params: params)
         case "storage":   return try await storageModule.handle(action: action, params: params)
@@ -254,6 +277,36 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
             return nil
         default:
             throw BridgeModuleError(code: "UNKNOWN_MODULE", message: "Unknown module: \(module)")
+        }
+    }
+
+    // MARK: - 권한 매핑
+
+    /// (module, action) → 호출에 필요한 권한 스코프. 매핑이 없으면 게이트 없음.
+    /// SDK MockAdapter / 백엔드 계약과 동일한 규칙을 유지한다.
+    ///
+    /// `auth.getUserProfile` 의 `user.profile` 은 **umbrella 게이트**다 — 거부 시 프로필 호출 전체가
+    /// 차단된다(nickname/userId 포함). `user.email` / `user.university` 는 그 위에 얹히는 **필드 단위**
+    /// 스코프로, getUserProfile 통과 후 응답에서 개별 제거된다(routeToModule 의 auth case 참고).
+    /// 따라서 미니앱이 email/university 를 쓰려면 `user.profile` 도 함께 선언/허용되어야 한다.
+    ///
+    /// 비고: `notification` 의 읽기·취소 계열(getPermissionStatus/getDeviceToken/cancelLocal/cancelAllLocal)과
+    /// `device.vibrate`·`device.clipboard`, ui/network/analytics/navigation 은 게이트 대상이 아니다.
+    static func requiredScope(module: String, action: String) -> PermissionScope? {
+        switch (module, action) {
+        case ("auth", "getUserProfile"):
+            return .userProfile
+        case ("device", "getLocation"):
+            return .deviceLocation
+        case ("device", "scanQRCode"):
+            return .deviceCamera
+        case ("storage", "get"), ("storage", "set"), ("storage", "remove"), ("storage", "clear"):
+            return .deviceStorage
+        case ("notification", "requestPermission"), ("notification", "scheduleLocal"),
+             ("notification", "subscribe"), ("notification", "unsubscribe"), ("notification", "setPushEnabled"):
+            return .notification
+        default:
+            return nil
         }
     }
 
