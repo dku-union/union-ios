@@ -12,16 +12,22 @@ struct SearchView: View {
                 VStack(alignment: .leading, spacing: UNSpacing.xxl) {
                     if store.query.isEmpty {
                         emptyState
-                    } else if store.results.isEmpty && !store.isSearching {
-                        noResultsView
-                    } else {
+                    } else if !store.results.isEmpty {
+                        // 결과 있음 — 재검색 중이어도 기존 결과를 유지(스피너는 overlay).
                         searchResults
+                    } else if store.isSearching {
+                        // 검색 중 & 결과 아직 없음 — "검색 결과 0개" 깜빡임 대신 빈 로딩 영역.
+                        searchingView
+                    } else {
+                        noResultsView
                     }
                 }
                 .padding(.top, UNSpacing.lg)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(UNColor.bgPrimary)
             .navigationTitle("검색")
+            .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $store.query, prompt: "미니앱 검색")
             .onSubmit(of: .search) {
                 store.send(.submitSearch)
@@ -67,16 +73,7 @@ struct SearchView: View {
                 }
             }
 
-            if !store.categories.isEmpty {
-                VStack(alignment: .leading, spacing: UNSpacing.lg) {
-                    Text("카테고리별 탐색")
-                        .font(UNFont.headingSmall())
-                        .foregroundStyle(UNColor.textPrimary)
-                        .padding(.horizontal, UNSpacing.xl)
-
-                    CategoryGrid(categories: store.categories)
-                }
-            }
+            // "카테고리별 탐색"은 카테고리 기능(코드↔표시명 매핑/탐색) 준비 전까지 임시 숨김 — 홈과 동일.
         }
     }
 
@@ -98,6 +95,16 @@ struct SearchView: View {
             }
             .padding(.horizontal, UNSpacing.xl)
         }
+    }
+
+    // MARK: - Searching
+
+    /// 검색 중이면서 결과가 아직 없을 때의 자리.
+    /// 콘텐츠는 비우고 화면 중앙 overlay 의 ProgressView 만 노출 — full-width 로 잡아
+    /// 좁은 폭으로 뒤 배경이 비치는 현상을 막는다.
+    private var searchingView: some View {
+        Color.clear
+            .frame(maxWidth: .infinity, minHeight: 200)
     }
 
     // MARK: - No Results

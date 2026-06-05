@@ -63,6 +63,9 @@ struct SearchFeature {
                         .cancel(id: CancelID.submit)
                     )
                 }
+                // 타이핑 즉시 검색 중 상태로 전환 — 디바운스 대기(300ms) 동안 "검색 결과가 없어요"가
+                // 잠깐 떴다가 다시 사라지는 깜빡임을 막는다.
+                state.isSearching = true
                 // Debounce 300ms — 타이핑이 계속되면 cancelInFlight으로 이전 타이머 취소되고 새로 시작.
                 return .run { send in
                     try await clock.sleep(for: .milliseconds(300))

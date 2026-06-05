@@ -1,13 +1,23 @@
 import SwiftUI
 import ComposableArchitecture
 
-// MARK: - Home View (Glassmorphism)
+// MARK: - Home View
 
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
 
     /// 배너 탭 시 라우팅 대상이 미니앱이면 여기에 담아 navigationDestination push.
     @State private var bannerDestinationApp: MiniApp?
+
+    /// 섹션 "더보기" 탭 시 해당 섹션 전체 목록으로 push.
+    @State private var sectionRoute: SectionRoute?
+
+    /// 섹션 전체보기 라우트 — 제목 + 해당 섹션 미니앱 목록.
+    private struct SectionRoute: Identifiable, Hashable {
+        let title: String
+        let apps: [MiniApp]
+        var id: String { title }
+    }
 
     /// 첫 로드 중 (데이터가 아직 없음) 여부 → 스켈레톤 표시 조건
     private var isFirstLoading: Bool {
@@ -25,7 +35,7 @@ struct HomeView: View {
                             .padding(.top, UNSpacing.sm)
 
                         if isFirstLoading {
-                            HomeSkeletonView(showRecentSection: store.hasEverLaunchedApp)
+                            HomeSkeletonView()
                                 .transition(.opacity)
                         } else {
                             contentSections
@@ -42,6 +52,11 @@ struct HomeView: View {
             .task { store.send(.onAppear) }
             .navigationDestination(item: $bannerDestinationApp) { app in
                 MiniAppWebView(miniApp: app)
+            }
+            .navigationDestination(item: $sectionRoute) { route in
+                SectionAppsView(title: route.title, apps: route.apps) { tapped in
+                    store.send(.appTapped(tapped))
+                }
             }
         }
     }
@@ -76,7 +91,8 @@ struct HomeView: View {
             handleBannerTap(banner)
         }
 
-        categorySection
+        // 카테고리 섹션은 카테고리 기능(코드↔표시명 매핑/탐색) 준비 전까지 임시 숨김.
+        // categorySection
 
         if !store.recentApps.isEmpty {
             miniAppHorizontalSection(title: "최근 사용", apps: store.recentApps)
@@ -88,7 +104,9 @@ struct HomeView: View {
             miniAppHorizontalSection(title: "새로운 미니앱", apps: store.newApps)
         }
 
-        recommendedSection
+        if !store.recommendedApps.isEmpty {
+            recommendedSection
+        }
     }
 
     // MARK: - Background
@@ -129,23 +147,17 @@ struct HomeView: View {
             }
             Spacer()
             Button {
-                clearMiniAppCache()
+                NotificationCenter.default.post(name: .unionShowNotifications, object: nil)
             } label: {
-                Image(systemName: "trash")
-                    .font(UNFont.captionLarge())
-                    .foregroundStyle(UNColor.textTertiary)
-                    .frame(width: 40, height: 40)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-            }
-            Button {} label: {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell")
                         .font(UNFont.headingLarge())
                         .foregroundStyle(UNColor.textSecondary)
                         .frame(width: 40, height: 40)
-                        .background(.ultraThinMaterial)
+                        .background(UNColor.bgSecondary)
                         .clipShape(Circle())
+                        .overlay(Circle().stroke(UNColor.border, lineWidth: 1))
+                        .unShadow(.subtle)
 
                     Circle()
                         .fill(UNColor.interactive)
@@ -156,13 +168,6 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, UNSpacing.xl)
-    }
-
-    private func clearMiniAppCache() {
-        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        let miniappsDir = cacheDir.appendingPathComponent("miniapps")
-        try? FileManager.default.removeItem(at: miniappsDir)
-        print("[Cache] Cleared miniapps cache")
     }
 
     // MARK: - Categories
@@ -178,7 +183,9 @@ struct HomeView: View {
 
     private var popularSection: some View {
         VStack(alignment: .leading, spacing: UNSpacing.lg) {
-            SectionHeader(title: "인기 미니앱")
+            SectionHeader(title: "인기 미니앱") {
+                sectionRoute = SectionRoute(title: "인기 미니앱", apps: store.popularApps)
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: UNSpacing.md) {
                     ForEach(Array(store.popularApps.enumerated()), id: \.element.id) { index, app in
@@ -196,7 +203,9 @@ struct HomeView: View {
 
     private var recommendedSection: some View {
         VStack(alignment: .leading, spacing: UNSpacing.lg) {
-            SectionHeader(title: "추천 미니앱")
+            SectionHeader(title: "추천 미니앱") {
+                sectionRoute = SectionRoute(title: "추천 미니앱", apps: store.recommendedApps)
+            }
             VStack(spacing: UNSpacing.md) {
                 ForEach(store.recommendedApps.prefix(4)) { app in
                     MiniAppCardHorizontal(app: app) { tapped in
@@ -212,7 +221,9 @@ struct HomeView: View {
 
     private func miniAppHorizontalSection(title: String, apps: [MiniApp]) -> some View {
         VStack(alignment: .leading, spacing: UNSpacing.lg) {
-            SectionHeader(title: title)
+            SectionHeader(title: title) {
+                sectionRoute = SectionRoute(title: title, apps: apps)
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: UNSpacing.md) {
                     ForEach(apps) { app in

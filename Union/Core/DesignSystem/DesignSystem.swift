@@ -172,6 +172,19 @@ extension View {
     func unShadow(_ style: UNShadow.Style = .card) -> some View {
         modifier(UNShadow(style: style))
     }
+
+    /// 솔리드 카드 표면 — DESIGN.md `UNCard` 스펙(흰 배경 + card 그림자).
+    /// ice 배경(#EDF2FA) 위에서 카드가 또렷이 분리되도록 1pt 헤어라인(ice200)을 병행한다.
+    func unCardSurface(cornerRadius: CGFloat = UNRadius.lg, shadow: UNShadow.Style = .card) -> some View {
+        self
+            .background(UNColor.bgSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(UNColor.border, lineWidth: 1)
+            )
+            .unShadow(shadow)
+    }
 }
 
 // MARK: - Color Hex Extension

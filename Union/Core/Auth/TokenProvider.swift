@@ -35,6 +35,10 @@ actor TokenProvider {
     /// - 이후 요청들은 이 Task의 결과를 공유
     private var activeRefreshTask: Task<String, Error>?
 
+    /// 무효화 세대 카운터. 로그아웃 시 증가시켜, 이미 진행 중이던 갱신이 네트워크에서
+    /// 돌아오더라도 keychain 에 새 토큰을 저장하지 못하게 막는다(세션 부활 방지).
+    private var invalidationGeneration = 0
+
     // MARK: - Init
 
     private init(
@@ -72,6 +76,15 @@ actor TokenProvider {
         try await executeSerializedRefresh()
     }
 
+    /// 로그아웃 시 호출. 진행 중인 갱신 Task 를 취소하고 세대를 증가시켜,
+    /// 그 갱신이 완료되더라도 새 토큰을 저장하지 못하게 무효화한다.
+    /// (로그아웃 직후 in-flight refresh 로 세션이 되살아나는 것을 방지)
+    func invalidate() {
+        invalidationGeneration &+= 1
+        activeRefreshTask?.cancel()
+        activeRefreshTask = nil
+    }
+
     // MARK: - Serialized Refresh
 
     /// 동시 갱신 요청을 단일 네트워크 호출로 병합
@@ -88,6 +101,9 @@ actor TokenProvider {
         let task = Task<String, Error> {
             defer { self.activeRefreshTask = nil }
 
+            // 이 갱신이 시작된 시점의 세대. 도중에 로그아웃(invalidate)되면 결과를 버린다.
+            let generation = self.invalidationGeneration
+
             guard let refreshToken = KeychainStore.load(.refreshToken) else {
                 self.broadcastSessionExpired()
                 throw TokenError.noRefreshToken
@@ -98,6 +114,15 @@ actor TokenProvider {
 
             do {
                 let response = try await self.performRefreshRequest(refreshToken: refreshToken)
+
+                // 네트워크 왕복 동안 로그아웃되었으면 새 토큰을 저장하지 않는다(세션 부활 방지).
+                // 재인증 에러(refreshTokenExpired)로 던지면 catch 가 broadcastSessionExpired 를
+                // 호출해 그 사이 재로그인한 새 세션까지 만료시키므로, "취소/대체됨" 의미의
+                // CancellationError 로 던져 세션 만료 브로드캐스트를 우회한다.
+                guard generation == self.invalidationGeneration else {
+                    throw CancellationError()
+                }
+
                 KeychainStore.save(response.accessToken, for: .accessToken)
                 KeychainStore.save(response.refreshToken, for: .refreshToken)
 

@@ -6,7 +6,7 @@ enum APIConfig {
     #if DEBUG
     static let baseURL = URL(string: "https://union-api-183092809276.asia-northeast3.run.app")!
     #else
-    static let baseURL = URL(string: "https://api.union.app")!
+    static let baseURL = URL(string: "https://union-api-183092809276.asia-northeast3.run.app")!
     #endif
 
     static var authURL: URL { baseURL.appendingPathComponent("/api/v1/auth") }

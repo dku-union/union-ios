@@ -111,6 +111,35 @@ extension APIEndpoint {
     static var discovery: Self { .init(path: "/mini-apps/discovery") }
     static var me: Self { .init(path: "/api/v1/users/me") }
 
+    // MARK: - 프로필 / 계정
+
+    /// 닉네임 수정 — PATCH /api/v1/users/me
+    static func updateNickname(body: Data) -> Self {
+        .init(path: "/api/v1/users/me", method: .patch, body: body)
+    }
+
+    /// 프로필 이미지 업로드용 GCS Signed PUT URL 요청 — POST /api/v1/users/me/profile-image/upload-url
+    static func profileImageUploadUrl(body: Data) -> Self {
+        .init(path: "/api/v1/users/me/profile-image/upload-url", method: .post, body: body)
+    }
+
+    /// 업로드 완료 후 프로필 이미지 URL 확정 — PATCH /api/v1/users/me/profile-image
+    static func updateProfileImage(body: Data) -> Self {
+        .init(path: "/api/v1/users/me/profile-image", method: .patch, body: body)
+    }
+
+    /// 회원 탈퇴(soft delete) — DELETE /api/v1/users/me
+    static var deleteAccount: Self {
+        .init(path: "/api/v1/users/me", method: .delete)
+    }
+
+    // MARK: - 신고
+
+    /// 신고 접수 — POST /reports
+    static func createReport(body: Data) -> Self {
+        .init(path: "/reports", method: .post, body: body)
+    }
+
     /// 미니앱 실행 → 사용 기록 저장 + CDN 번들 URL 반환
     /// POST /mini-apps/{id}/launch → { "bundleUrl": "https://cdn.union.app/..." }
     static func launchApp(id: Int) -> Self {

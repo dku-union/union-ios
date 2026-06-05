@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Category Grid (Glass Chips)
+// MARK: - Category Grid
 
 struct CategoryGrid: View {
     let categories: [AppCategory]
@@ -17,7 +17,7 @@ struct CategoryGrid: View {
     }
 }
 
-// MARK: - Category Chip (Glassmorphism)
+// MARK: - Category Chip
 
 private struct CategoryChip: View {
     let category: AppCategory
@@ -29,11 +29,6 @@ private struct CategoryChip: View {
                     Circle()
                         .fill(Color(hex: category.colorHex).opacity(0.15))
                         .frame(width: 52, height: 52)
-
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .frame(width: 52, height: 52)
-                        .opacity(0.5)
 
                     Text(category.emoji)
                         .font(.title2)

@@ -26,13 +26,39 @@ struct MainTabView: View {
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
         appearance.backgroundColor = .white
-        appearance.shadowColor = UIColor(UNColor.divider)
+        // 기본 그림자/헤어라인 제거 후, 1px 옅은 회색 라인으로 상단 구분선 교체.
+        appearance.shadowColor = nil
+        appearance.shadowImage = Self.tabBarTopLine(
+            color: UIColor(UNColor.charcoal400).withAlphaComponent(0.5),
+            height: 1
+        )
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor(UNColor.textTertiary)
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
             .foregroundColor: UIColor(UNColor.textTertiary)
         ]
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
+
+        // 네비게이션 바: 흰 배경 + 하단 구분선/그림자 제거. (charcoal 툴바 화면은 .toolbarBackground 로 자체 override)
+        // shadowColor 만으론 라인이 남을 수 있어 shadowImage 도 빈 이미지로 지정해 완전히 제거.
+        let navAppearance = UINavigationBarAppearance()
+        navAppearance.configureWithOpaqueBackground()
+        navAppearance.backgroundColor = .white
+        navAppearance.shadowColor = .clear
+        navAppearance.shadowImage = UIImage()
+        UINavigationBar.appearance().standardAppearance = navAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+        UINavigationBar.appearance().compactAppearance = navAppearance
+    }
+
+    /// 탭바 상단 구분선용 단색 라인 이미지. 가로로 늘어나며 height(pt) 만큼의 두께를 가진다.
+    private static func tabBarTopLine(color: UIColor, height: CGFloat) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1, height: height))
+        return renderer.image { context in
+            color.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1, height: height))
+        }
+        .withRenderingMode(.alwaysOriginal)
     }
 
     var body: some View {
@@ -66,6 +92,10 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .unionDeeplinkReceived)) { _ in
             // 알림 탭/콜드런치로 들어온 deeplink → 알림 탭으로 전환.
             // 사용자가 인박스에서 한 번 더 탭하면 NotificationsFeature 가 미니앱으로 push.
+            selectedTab = .notifications
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .unionShowNotifications)) { _ in
+            // 홈 상단 알림 버튼 탭 → 알림 탭으로 전환.
             selectedTab = .notifications
         }
     }

@@ -48,6 +48,17 @@ struct AppRootView: View {
                 }
             }
         }
+        .fullScreenCover(
+            item: Binding(
+                get: { store.pendingDeeplinkApp },
+                set: { if $0 == nil { store.send(.dismissDeeplinkApp) } }
+            )
+        ) { run in
+            NavigationStack {
+                MiniAppWebView(miniApp: run.miniApp, initialPath: run.initialPath)
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        }
         .alert(
             "테스트 실행 실패",
             isPresented: Binding(

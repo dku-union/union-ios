@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Vertical Card (Glassmorphism)
+// MARK: - Vertical Card
 
 struct MiniAppCardVertical: View {
     let app: MiniApp
@@ -22,35 +22,17 @@ struct MiniAppCardVertical: View {
                         .foregroundStyle(UNColor.textTertiary)
                         .lineLimit(1)
                 }
-
-                ratingView
             }
-            .frame(width: 120)
+            .frame(width: 120, alignment: .leading)
             .padding(UNSpacing.lg)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous)
-                    .stroke(.white.opacity(0.5), lineWidth: 0.5)
-            )
+            .unCardSurface()
         }
         .buttonStyle(ScaleButtonStyle())
         .simultaneousGesture(TapGesture().onEnded { onTap(app) })
     }
-
-    private var ratingView: some View {
-        HStack(spacing: UNSpacing.xs) {
-            Image(systemName: "star.fill")
-                .font(UNFont.captionSmall())
-                .foregroundStyle(UNColor.warning)
-            Text(String(format: "%.1f", app.rating))
-                .font(UNFont.captionLarge(.semibold))
-                .foregroundStyle(UNColor.textSecondary)
-        }
-    }
 }
 
-// MARK: - Horizontal Card (Glassmorphism)
+// MARK: - Horizontal Card
 
 struct MiniAppCardHorizontal: View {
     let app: MiniApp
@@ -62,10 +44,14 @@ struct MiniAppCardHorizontal: View {
                 AppIconView(iconUrl: app.iconUrl, emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 48)
 
                 VStack(alignment: .leading, spacing: UNSpacing.xs) {
-                    Text(app.name)
-                        .font(UNFont.bodyMedium(.semibold))
-                        .foregroundStyle(UNColor.textPrimary)
-                        .lineLimit(1)
+                    HStack(spacing: UNSpacing.xs) {
+                        Text(app.name)
+                            .font(UNFont.bodyMedium(.semibold))
+                            .foregroundStyle(UNColor.textPrimary)
+                            .lineLimit(1)
+
+                        if app.isNew { NewBadge() }
+                    }
 
                     Text(app.publisher)
                         .font(UNFont.captionLarge())
@@ -73,49 +59,17 @@ struct MiniAppCardHorizontal: View {
                         .lineLimit(1)
                 }
 
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: UNSpacing.xs) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "star.fill")
-                            .font(UNFont.captionSmall())
-                            .foregroundStyle(UNColor.warning)
-                        Text(String(format: "%.1f", app.rating))
-                            .font(UNFont.captionLarge(.semibold))
-                            .foregroundStyle(UNColor.textSecondary)
-                    }
-
-                    if app.isNew {
-                        Text("NEW")
-                            .font(.system(size: 9, weight: .heavy))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                LinearGradient(
-                                    colors: UNColor.gradientCoralOrange,
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .clipShape(Capsule())
-                    }
-                }
+                Spacer(minLength: 0)
             }
             .padding(UNSpacing.lg)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous)
-                    .stroke(.white.opacity(0.5), lineWidth: 0.5)
-            )
+            .unCardSurface()
         }
         .buttonStyle(ScaleButtonStyle())
         .simultaneousGesture(TapGesture().onEnded { onTap(app) })
     }
 }
 
-// MARK: - Ranked Card (Glassmorphism)
+// MARK: - Ranked Card
 
 struct MiniAppCardRanked: View {
     let app: MiniApp
@@ -127,18 +81,7 @@ struct MiniAppCardRanked: View {
             VStack(alignment: .leading, spacing: UNSpacing.md) {
                 ZStack(alignment: .topLeading) {
                     AppIconView(iconUrl: app.iconUrl, emoji: app.iconEmoji, colorHex: app.iconColorHex, size: 60)
-
-                    // Rank badge
-                    Text("\(rank)")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
-                        .frame(width: 22, height: 22)
-                        .background(
-                            rank <= 3
-                                ? LinearGradient(colors: UNColor.gradientRedAccent, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                : LinearGradient(colors: [UNColor.textTertiary, UNColor.textTertiary], startPoint: .top, endPoint: .bottom)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    RankBadge(rank: rank)
                         .offset(x: -6, y: -6)
                 }
 
@@ -153,31 +96,51 @@ struct MiniAppCardRanked: View {
                         .foregroundStyle(UNColor.textTertiary)
                         .lineLimit(1)
                 }
-
-                HStack(spacing: UNSpacing.xs) {
-                    Image(systemName: "star.fill")
-                        .font(UNFont.captionSmall())
-                        .foregroundStyle(UNColor.warning)
-                    Text(String(format: "%.1f", app.rating))
-                        .font(UNFont.captionLarge(.semibold))
-                        .foregroundStyle(UNColor.textSecondary)
-                    if app.ratingCount > 0 {
-                        Text("(\(app.ratingCount))")
-                            .font(UNFont.captionSmall())
-                            .foregroundStyle(UNColor.textTertiary)
-                    }
-                }
             }
-            .frame(width: 130)
+            .frame(width: 130, alignment: .leading)
             .padding(UNSpacing.lg)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: UNRadius.lg, style: .continuous)
-                    .stroke(.white.opacity(0.5), lineWidth: 0.5)
-            )
+            .unCardSurface()
         }
         .buttonStyle(ScaleButtonStyle())
         .simultaneousGesture(TapGesture().onEnded { onTap(app) })
+    }
+}
+
+// MARK: - Shared Card Elements
+
+/// 신규 앱 뱃지. 이름 옆 인라인, 솔리드 브랜드 레드.
+private struct NewBadge: View {
+    var body: some View {
+        Text("NEW")
+            .font(.system(size: 9, weight: .heavy))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(UNColor.interactive)
+            .clipShape(Capsule())
+    }
+}
+
+/// 인기 랭킹 뱃지. Top 3 는 브랜드 그라디언트, 그 외는 솔리드 차콜. 흰 링으로 아이콘과 분리.
+private struct RankBadge: View {
+    let rank: Int
+
+    var body: some View {
+        Text("\(rank)")
+            .font(.system(size: 11, weight: .black, design: .rounded))
+            .foregroundStyle(.white)
+            .frame(width: 22, height: 22)
+            .background {
+                if rank <= 3 {
+                    LinearGradient(colors: UNColor.gradientRedAccent, startPoint: .topLeading, endPoint: .bottomTrailing)
+                } else {
+                    UNColor.charcoal400
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(.white, lineWidth: 1.5)
+            )
     }
 }
