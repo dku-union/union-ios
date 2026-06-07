@@ -80,7 +80,7 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
     private let analyticsAppId: String
 
     // 모듈 핸들러
-    private lazy var authModule = AuthBridgeModule()
+    private lazy var authModule = AuthBridgeModule(miniAppId: miniApp.id)
     private lazy var uiModule = UIBridgeModule()
     private lazy var deviceModule = DeviceBridgeModule()
     private lazy var storageModule: StorageBridgeModule = {

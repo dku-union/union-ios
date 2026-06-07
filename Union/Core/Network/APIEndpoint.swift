@@ -146,6 +146,12 @@ extension APIEndpoint {
         .init(path: "/mini-apps/\(id)/launch", method: .post)
     }
 
+    /// 미니앱(appId) 스코프 사용자 ID 토큰 발급 (publisher 백엔드 인증용).
+    /// POST /mini-apps/{id}/id-token → { "idToken": "...", "tokenType": "Bearer", "expiresIn": 3600 }
+    static func miniAppIdToken(id: Int) -> Self {
+        .init(path: "/mini-apps/\(id)/id-token", method: .post)
+    }
+
     // MARK: - Notifications
 
     /// APNs/FCM 토큰 등록 (upsert)
