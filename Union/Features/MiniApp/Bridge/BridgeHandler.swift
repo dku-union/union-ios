@@ -239,7 +239,17 @@ final class BridgeHandler: NSObject, WKScriptMessageHandler {
         case "device":    return try await deviceModule.handle(action: action, params: params)
         case "storage":   return try await storageModule.handle(action: action, params: params)
         case "analytics": return try await analyticsModule.handle(action: action, params: params)
-        case "network":   return try await networkModule.handle(action: action, params: params)
+        case "network":
+            // 상대경로 URL → WebView 현재 URL 기준으로 절대경로 resolve.
+            // URLSession은 scheme 없는 URL을 처리 못하므로 여기서 변환한다.
+            var networkParams = params
+            if let urlString = params["url"] as? String,
+               !urlString.hasPrefix("http://"), !urlString.hasPrefix("https://"),
+               let base = webView?.url,
+               let resolved = URL(string: urlString, relativeTo: base) {
+                networkParams["url"] = resolved.absoluteString
+            }
+            return try await networkModule.handle(action: action, params: networkParams)
         case "notification":
             return try await notificationModule.handle(action: action, params: params)
         case "navigation":
