@@ -117,16 +117,13 @@ private extension MiniAppClient {
     /// TAXIPOT_DEV_URL 환경변수로 포트 재정의 가능 (Scheme → Run → Environment Variables).
     static func injectDevApp(into data: DiscoveryData) -> DiscoveryData {
         let devURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"] ?? "http://localhost:5174"
-        // 이미 같은 appId가 있으면 중복 주입 방지
-        let alreadyPresent = (data.popularApps + data.newApps).contains { $0.appId == "com.union.taxipot" }
-        guard !alreadyPresent else { return data }
         let devApp = MiniApp(
-            id: -1,
-            name: "택시팟 (dev)", description: "로컬 개발 서버 (\(devURL))",
+            id: Int.min,
+            name: "🛠 택시팟 (dev)", description: devURL,
             publisher: "Dev", category: "ETC",
-            iconUrl: nil, iconEmoji: "🚕", iconColorHex: "3B5BFF",
+            iconUrl: nil, iconEmoji: "🚕", iconColorHex: "FF6060",
             rating: 0, ratingCount: 0,
-            isNew: true, isPopular: false, createdAt: Date(),
+            isNew: false, isPopular: false, createdAt: Date.distantPast,
             webUrl: devURL, appId: "com.union.taxipot"
         )
         return DiscoveryData(
