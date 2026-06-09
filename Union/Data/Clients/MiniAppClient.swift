@@ -118,19 +118,28 @@ private extension MiniAppClient {
     static func injectDevApp(into data: DiscoveryData) -> DiscoveryData {
         let devURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"]
             ?? "https://storage.googleapis.com/union-app-miniapps/mini-apps/66d1bf78-29b5-45d8-bba7-f08f88bffa23/20260609/com.union.taxi-pot-1.0.2.unionapp"
+
+        // 모든 섹션에서 실제 택시팟 찾기 — 백엔드 ID를 재사용해야 id-token 엔드포인트가 동작함
+        let allApps = data.popularApps + data.newApps + data.recommendedApps + data.recentApps
+        guard let real = allApps.first(where: {
+            $0.appId == "com.union.taxipot" || $0.appId == "com.union.taxi-pot"
+        }) else { return data }
+
         let devApp = MiniApp(
-            id: Int.min,
-            name: "🛠 택시팟 (dev)", description: devURL,
-            publisher: "Dev", category: "ETC",
-            iconUrl: nil, iconEmoji: "🚕", iconColorHex: "FF6060",
-            rating: 0, ratingCount: 0,
+            id: real.id,
+            name: "🛠 \(real.name) (dev)", description: devURL,
+            publisher: real.publisher, category: real.category,
+            iconUrl: nil, iconEmoji: real.iconEmoji ?? "🚕", iconColorHex: "FF6060",
+            rating: real.rating, ratingCount: real.ratingCount,
             isNew: false, isPopular: false, createdAt: Date.distantPast,
-            webUrl: devURL, appId: "com.union.taxipot"
+            webUrl: devURL, appId: real.appId
         )
+
+        // 원본 제거 후 dev 버전을 popularApps 맨 앞에 삽입
         return DiscoveryData(
-            popularApps: [devApp] + data.popularApps,
-            newApps: data.newApps,
-            recommendedApps: data.recommendedApps,
+            popularApps: [devApp] + data.popularApps.filter { $0.id != real.id },
+            newApps: data.newApps.filter { $0.id != real.id },
+            recommendedApps: data.recommendedApps.filter { $0.id != real.id },
             recentApps: data.recentApps,
             categories: data.categories,
             trendingKeywords: data.trendingKeywords
