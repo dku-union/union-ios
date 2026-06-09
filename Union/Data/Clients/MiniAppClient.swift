@@ -115,12 +115,9 @@ extension MiniAppClient: TestDependencyKey {
 private extension MiniAppClient {
     /// DEBUG 빌드에서 discovery 결과 맨 앞에 로컬 개발 서버 택시팟을 주입한다.
     /// TAXIPOT_DEV_URL 환경변수로 포트 재정의 가능 (Scheme → Run → Environment Variables).
-    // 사용법: Xcode → Scheme → Run → Environment Variables
-    //   TAXIPOT_DEV_URL = https://.../com.union.taxipot-X.X.X.unionapp
-    // union build 후 union upload 로 받은 bundleUrl을 넣는다.
     static func injectDevApp(into data: DiscoveryData) -> DiscoveryData {
-        guard let devURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"],
-              !devURL.isEmpty else { return data }
+        let devURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"]
+            ?? "https://storage.googleapis.com/union-app-miniapps/mini-apps/66d1bf78-29b5-45d8-bba7-f08f88bffa23/com.union.taxi-pot-1.0.2.unionapp"
         let devApp = MiniApp(
             id: Int.min,
             name: "🛠 택시팟 (dev)", description: devURL,
