@@ -48,8 +48,6 @@ enum MockData {
 
     /// 개발 테스트용: sample-app을 union dev로 실행 중일 때 사용
     static let devBaseURL = "http://localhost:3000"
-    /// 택시팟 로컬 개발 서버. 시뮬레이터에서 테스트할 때 `npm run dev`로 띄운 Vite 포트와 맞춰야 한다.
-    static let taxiPotDevURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"] ?? "http://localhost:5174"
 
     static let allApps: [MiniApp] = [
         MiniApp(id: 14,
@@ -58,7 +56,7 @@ enum MockData {
                 iconUrl: nil, iconEmoji: "🚕", iconColorHex: "3B5BFF",
                 rating: 5.0, ratingCount: 1,
                 isNew: true, isPopular: true, createdAt: date(daysAgo: 0),
-                webUrl: taxiPotDevURL,
+                webUrl: "http://34.110.138.90/mini-apps/66d1bf78-29b5-45d8-bba7-f08f88bffa23/com.union.taxipot-1.0.0.unionapp",
                 appId: "com.union.taxipot"),
         MiniApp(id: 2,
                 name: "Sample App (CDN)", description: "CDN에서 서빙되는 샘플 미니앱 테스트",

@@ -34,7 +34,7 @@ extension MiniAppClient: DependencyKey {
 
         return MiniAppClient(
             fetchDiscovery: {
-                try await cache.query(key: "discovery", staleTime: 300) {
+                var data = try await cache.query(key: "discovery", staleTime: 300) {
                     let response: DiscoveryResponse = try await apiClient.request(.discovery)
                     return DiscoveryData(
                         popularApps: response.popularApps.map { $0.toMiniApp() },
@@ -45,6 +45,10 @@ extension MiniAppClient: DependencyKey {
                         trendingKeywords: response.trendingKeywords
                     )
                 }
+                #if DEBUG
+                data = MiniAppClient.injectDevApp(into: data)
+                #endif
+                return data
             },
             fetchBanners: {
                 try await cache.query(key: "banners", staleTime: 600) {
@@ -106,6 +110,36 @@ extension MiniAppClient: TestDependencyKey {
         recordSearchClick: { _, _ in }
     )
 }
+
+#if DEBUG
+private extension MiniAppClient {
+    /// DEBUG 빌드에서 discovery 결과 맨 앞에 로컬 개발 서버 택시팟을 주입한다.
+    /// TAXIPOT_DEV_URL 환경변수로 포트 재정의 가능 (Scheme → Run → Environment Variables).
+    static func injectDevApp(into data: DiscoveryData) -> DiscoveryData {
+        let devURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"] ?? "http://localhost:5174"
+        // 이미 같은 appId가 있으면 중복 주입 방지
+        let alreadyPresent = (data.popularApps + data.newApps).contains { $0.appId == "com.union.taxipot" }
+        guard !alreadyPresent else { return data }
+        let devApp = MiniApp(
+            id: -1,
+            name: "택시팟 (dev)", description: "로컬 개발 서버 (\(devURL))",
+            publisher: "Dev", category: "ETC",
+            iconUrl: nil, iconEmoji: "🚕", iconColorHex: "3B5BFF",
+            rating: 0, ratingCount: 0,
+            isNew: true, isPopular: false, createdAt: Date(),
+            webUrl: devURL, appId: "com.union.taxipot"
+        )
+        return DiscoveryData(
+            popularApps: [devApp] + data.popularApps,
+            newApps: data.newApps,
+            recommendedApps: data.recommendedApps,
+            recentApps: data.recentApps,
+            categories: data.categories,
+            trendingKeywords: data.trendingKeywords
+        )
+    }
+}
+#endif
 
 extension DependencyValues {
     var miniAppClient: MiniAppClient {
