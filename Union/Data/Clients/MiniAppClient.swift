@@ -116,7 +116,8 @@ private extension MiniAppClient {
     /// DEBUG 빌드에서 discovery 결과 맨 앞에 로컬 개발 서버 택시팟을 주입한다.
     /// TAXIPOT_DEV_URL 환경변수로 포트 재정의 가능 (Scheme → Run → Environment Variables).
     static func injectDevApp(into data: DiscoveryData) -> DiscoveryData {
-        let devURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"] ?? "http://localhost:5174"
+        let devURL = ProcessInfo.processInfo.environment["TAXIPOT_DEV_URL"]
+            ?? "http://34.110.138.90/mini-apps/66d1bf78-29b5-45d8-bba7-f08f88bffa23/com.union.taxipot-1.0.0.unionapp"
         let devApp = MiniApp(
             id: Int.min,
             name: "🛠 택시팟 (dev)", description: devURL,
